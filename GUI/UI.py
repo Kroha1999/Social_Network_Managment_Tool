@@ -43,14 +43,17 @@ def updateTreeView():
         myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]))
         myTreeView.insert("Item"+str(i), 0, str(i)+"ElSubItem"+str(0), text = str(p["password"]))
         i+=1
+
+def updateAccountsData():
+    with open('data.json', 'w') as outfile:  
+        json.dump(data_accounts, outfile)
         
 def deleteAll():
     global CurrentSocialNetwork
     data_accounts[CurrentSocialNetwork]=[]
     answer = tk.messagebox.askokcancel("WARNING","YOU ARE TRYING TO DELETE ALL THE ACCOUNTS DATA\nAre you sure?",parent=root)
     if answer==True:
-        with open('data.json', 'w') as outfile:  
-            json.dump(data_accounts, outfile)
+        updateAccountsData()
         updateTreeView()
 
 def deleteSelected():
@@ -67,37 +70,73 @@ def deleteSelected():
 
                     data_accounts[CurrentSocialNetwork].remove(el)
         
-        with open('data.json', 'w') as outfile:  
-            json.dump(data_accounts, outfile)
+        updateAccountsData()
         updateTreeView()
+    
+def selectAll():
+    children = myTreeView.get_children() 
+    myTreeView.selection_set(children)
+
+def removeSelection():
+    children = myTreeView.get_children() 
+    myTreeView.selection_toggle(children)
+    myTreeView.selection_remove(children)
+
+def compareStrings(a,b):
+    a = a.toLowerCase()
+    b = b.toLowerCase()
+
+    if(a<b):
+        return -1
+    elif(a>b):
+        return 1
+    else:
+        return 0
+
+def sortAccounts():
+    global CurrentSocialNetwork
+    if data_accounts[CurrentSocialNetwork] != sorted(data_accounts[CurrentSocialNetwork], key = lambda i: i['nickname']):
+        data_accounts[CurrentSocialNetwork] = sorted(data_accounts[CurrentSocialNetwork], key = lambda i: i['nickname'])
+    else:
+        data_accounts[CurrentSocialNetwork] = sorted(data_accounts[CurrentSocialNetwork], key = lambda i: i['nickname'],reverse=True)
+    updateAccountsData()
+    updateTreeView()
+
         
 
 
 #promt user to enter nickname and password to the account
 def addAccount():
     global CurrentSocialNetwork
-    if CurrentSocialNetwork == "Instagram":
-        
-        answer_name = simpledialog.askstring("Authenication Data", "Add Nickname",parent=root)
-        if answer_name is not None and answer_name!="":
+    
+    answer_name = simpledialog.askstring("Authenication Data", "Add Nickname",parent=root)
+    if answer_name is not None and answer_name!="":
 
-            answer_pass = simpledialog.askstring("Authenication Data", "Add Password",parent=root)
-            if answer_pass is not None and answer_pass!="":
+        answer_pass = simpledialog.askstring("Authenication Data", "Add Password",parent=root)
+        if answer_pass is not None and answer_pass!="":
 
-                global data_accounts
+            global data_accounts
+            isNotSameAcc = True
+            
+            for acc in data_accounts[CurrentSocialNetwork]:
+                if acc['nickname'] == answer_name:
+                    acc['password']=answer_pass
+                    isNotSameAcc=False
+                    break
+            
+            if(isNotSameAcc):
                 data_accounts[CurrentSocialNetwork].append({
                     'nickname':answer_name,
                     'password':answer_pass
                 })
-                with open('data.json', 'w') as outfile:  
-                    json.dump(data_accounts, outfile)
-                updateTreeView()
+            updateAccountsData()
+            updateTreeView()
 
-            elif answer_pass=="":
-                tk.messagebox.showerror("Error", "No password entered\nAccount not added")
+        elif answer_pass=="":
+            tk.messagebox.showerror("Error", "No password entered\nAccount not added")
 
-        elif answer_name=="":
-            tk.messagebox.showerror("Error", "No nickname entered\nAccount not added")
+    elif answer_name=="":
+        tk.messagebox.showerror("Error", "No nickname entered\nAccount not added")
 
 
 # ********** Sub Menus **********
@@ -160,19 +199,24 @@ but_3.pack(side=tk.TOP, padx=0,pady=0,fill=tk.X)
 topFrame = tk.Frame(left_frame,bg="white",bd=0)
 topFrame.pack(side=tk.TOP,fill = tk.X)
 
-topBut1 = tk.Button(topFrame, width=10, text = "Sort",bd=1,bg="white")
+topBut1 = tk.Button(topFrame, width=10, text = "Sort",bd=1,bg="white",command=sortAccounts)
 topBut1.pack(side=tk.RIGHT)
-topBut2 = tk.Button(topFrame, width=10, text = "Deselect all",bd=1,bg="white")
+topBut2 = tk.Button(topFrame, width=10, text = "Deselect all",bd=1,bg="white",command=removeSelection)
 topBut2.pack(side=tk.RIGHT)
-topBut3 = tk.Button(topFrame, width=10, text = "Select all",bd=1,bg="white")
+topBut3 = tk.Button(topFrame, width=10, text = "Select all",bd=1,bg="white",command=selectAll)
 topBut3.pack(side=tk.RIGHT)
 
 topLable = tk.Label(topFrame,text="Instagram accounts",padx=10,bg="white",bd=1,width=20)
 topLable.pack(side=tk.LEFT)
 
 #$$$$$$$$$$$$$$$$$ ACCOUNTS MIDDLE PLATFORM $$$$$$$$$$$$$$$$$$$$$$$$
-myTreeView = ttk.Treeview(left_frame,height=30, show="tree")
+myTreeView = ttk.Treeview(left_frame,height=30)
 myTreeView.pack(fill="both", expand=True)
+myTreeView.config(columns =('lan'))
+myTreeView.column('lan',width=50)
+myTreeView.heading('#0',text='Nickname')
+myTreeView.heading('lan',text='Language')
+
 
 updateTreeView()
 
