@@ -12,8 +12,9 @@ from instaloader import Profile
 import languages 
 
 #outer libs
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 from io import BytesIO
+import numpy as np
 import os
 import requests
 import json
@@ -23,11 +24,16 @@ import json
 #PROJECT DIRECTORIES###########
 if not os.path.exists("ProfilePicsMin\\"):
     os.makedirs("ProfilePicsMin\\")
+if not os.path.exists("sessions\\"):
+    os.makedirs("sessions\\")
+
 
 
 #******************** GlobalVariables *******************
 CurrentSocialNetwork = "Instagram"
 Accounts={".!frame2.!frame.!button":"Instagram",".!frame2.!frame.!button2":"Facebook",".!frame2.!frame.!button3":"Twitter"}
+
+accountsInstancesInsta={}
 
 data_accounts = {}
 data_accounts["Instagram"] = []
@@ -130,7 +136,8 @@ def updateTreeView():
         if CurrentSocialNetwork == 'Instagram':
             
             global myImg
-            ima = Image.open("ProfilePicsMin//"+p['nickname']+'.png')            
+            #ima = Image.open("ProfilePicsMin//"+p['nickname']+'.png')            
+            ima = circle_img(Image.open("ProfilePicsMin//"+p['nickname']+'.png'))
             myImg[p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
             
@@ -165,9 +172,9 @@ def chooseSocial(button):
 
 def deleteAll():
     global CurrentSocialNetwork
-    data_accounts[CurrentSocialNetwork]=[]
     answer = tk.messagebox.askokcancel("WARNING","YOU ARE TRYING TO DELETE ALL THE ACCOUNTS DATA\nAre you sure?",parent=root)
     if answer==True:
+        data_accounts[CurrentSocialNetwork]=[]
         updateAccountsData()
         updateTreeView()
 
@@ -217,6 +224,25 @@ def sortAccounts():
     updateAccountsData()
     updateTreeView()
 
+
+def circle_img(img, offset=0):
+    img=img.convert("RGB")
+    npImage=np.array(img)
+    h,w=img.size
+
+    # Create same size alpha layer with circle
+    alpha = Image.new('L', img.size,0)
+    draw = ImageDraw.Draw(alpha)
+    draw.pieslice([0,0,h,w],0,360,fill=255)
+
+    # Convert alpha Image to numpy array
+    npAlpha=np.array(alpha)
+    
+    # Add alpha layer to RGB
+    npImage=np.dstack((npImage,npAlpha))    
+    
+    result = Image.fromarray(npImage)
+    return result
 
 #promt user to enter nickname and password to the account
 def addAccount(name,password,lan,other_data,loginInstance):
