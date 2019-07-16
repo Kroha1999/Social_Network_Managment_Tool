@@ -21,20 +21,18 @@ import json
 
 
 
-#PROJECT DIRECTORIES###########
-if not os.path.exists("ProfilePicsMin\\"):
-    os.makedirs("ProfilePicsMin\\")
-if not os.path.exists("sessions\\"):
-    os.makedirs("sessions\\")
-
-
+#******************** CONSTANTS *************************
+PATH_PROFILE_PICS = "ProfilePicsMin\\"
+PATH_SESSIONS_INSTAGRAM = "sessions\\"
 
 #******************** GlobalVariables *******************
 CurrentSocialNetwork = "Instagram"
 Accounts={".!frame2.!frame.!button":"Instagram",".!frame2.!frame.!button2":"Facebook",".!frame2.!frame.!button3":"Twitter"}
 
+#here will be saved opened from file sessions Instagram 
 accountsInstancesInsta={}
 
+#General accounts data representation
 data_accounts = {}
 data_accounts["Instagram"] = []
 data_accounts["Facebook"] = []
@@ -42,11 +40,30 @@ data_accounts["Twitter"] = []
 
 global myImg
 myImg = {}
-#with open('data.json', 'w') as outfile:  #TEMPORARY
-#    json.dump(data_accounts, outfile)
+
+
+
+
+#PROJECT DIRECTORIES creation if absent###########
+if not os.path.exists(PATH_PROFILE_PICS):
+    os.makedirs(PATH_PROFILE_PICS)
+if not os.path.exists(PATH_SESSIONS_INSTAGRAM):
+    os.makedirs(PATH_SESSIONS_INSTAGRAM)
+
+
 #******************** FUNCTIONS *******************
 
 #INSTALOADER$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+def getSavedAccSessionsInsta():
+    global accountsInstancesInsta
+    for acc in data_accounts['Instagram']:
+        nick = acc['nickname']
+        session = acc['session']
+        accountsInstancesInsta[nick] = instaloader.Instaloader()
+        accountsInstancesInsta[nick].load_session_from_file(nick,session)
+        #print(accountsInstancesInsta[nick].test_login())
+        
 def submit2FA(L,code,nick,password,lan,popup,popup2):
     try:
         L.two_factor_login(code.get())
@@ -136,8 +153,8 @@ def updateTreeView():
         if CurrentSocialNetwork == 'Instagram':
             
             global myImg
-            #ima = Image.open("ProfilePicsMin//"+p['nickname']+'.png')            
-            ima = circle_img(Image.open("ProfilePicsMin//"+p['nickname']+'.png'))
+            #ima = Image.open(PATH_PROFILE_PICS+p['nickname']+'.png')            
+            ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
             myImg[p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
             
@@ -250,26 +267,26 @@ def addAccount(name,password,lan,other_data,loginInstance):
     isNotSameAcc = True
     for acc in data_accounts[CurrentSocialNetwork]:
         if acc['nickname'] == name:
-            loginInstance.save_session_to_file('sessions\\'+name+'.se')
+            loginInstance.save_session_to_file(PATH_SESSIONS_INSTAGRAM+name+'.se')
             acc['password']=password
             acc['language']=lan
             acc['fullName']=other_data['fullName']
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
-            acc['session']='sessions\\'+name+'.se'
+            acc['session']=PATH_SESSIONS_INSTAGRAM+name+'.se'
             
             #Saving image
             response = requests.get(other_data['imgUrl'])
             ima = Image.open(BytesIO(response.content)) 
             ima = ima.resize((32,32),Image.ANTIALIAS)
-            ima.save("ProfilePicsMin//"+name+'.png')
+            ima.save(PATH_PROFILE_PICS+name+'.png')
 
 
             isNotSameAcc=False
             break
     
     if(isNotSameAcc):
-        loginInstance.save_session_to_file('sessions\\'+name+'.se')
+        loginInstance.save_session_to_file(PATH_SESSIONS_INSTAGRAM+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
             'nickname':name,
             'password':password,
@@ -277,14 +294,14 @@ def addAccount(name,password,lan,other_data,loginInstance):
             'fullName':other_data['fullName'],
             'biography':other_data['biography'],
             'imgUrl': other_data['imgUrl'],
-            'session': 'sessions\\'+name+'.se'
+            'session': PATH_SESSIONS_INSTAGRAM+name+'.se'
         })
 
         #Saving image locally
         response = requests.get(other_data['imgUrl'])
         ima = Image.open(BytesIO(response.content)) 
         ima = ima.resize((32,32),Image.ANTIALIAS)
-        ima.save("ProfilePicsMin//"+name+'.png')
+        ima.save(PATH_PROFILE_PICS+name+'.png')
 
     updateAccountsData()
     updateTreeView()
@@ -307,37 +324,37 @@ def addAccountPopUp():
     popup.transient(root)
     popup.configure(background="white")
     popup.title("Enter this data to create the account")
-    popup.geometry("340x170")
+    popup.geometry("380x170")
     popup.resizable(0, 0)
     
     #Begining
-    mes = tk.Label(popup, text="by entering already existing Nickname in the system, \nyou will change it's account data",bg="#f9f8e2")
+    mes = tk.Label(popup, text="by entering already existing Nickname in the system, \nyou will update it's account data (such as img, language, etc)",bg="#f9f8e2")
     mes.grid(row=0,column=1,columnspan=4,pady=7,padx=0)
     f = font.Font(mes, mes.cget("font"))
     f.configure(underline = True)
     mes.configure(font=f)
     
     #Center
-    qNick = tk.Label(popup, text="?")
+    qNick = tk.Label(popup, text="?",bg="white")
     qNick.grid(row=1,column=0)
     qNick.configure(font=f)
-    nick = tk.Label(popup, text="Nickname:",width = 13,anchor ='w')
+    nick = tk.Label(popup, text="Nickname:",width = 13,anchor ='w',bg="white")
     nick.grid(row=1,column=1)
     nickEnt = tk.Entry(popup,bg="#e1e1e1",width = 22)
     nickEnt.grid(row=1,column=2,columnspan=3)
 
-    qPassword = tk.Label(popup, text="?",pady=4)
+    qPassword = tk.Label(popup, text="?",pady=4,bg="white")
     qPassword.configure(font=f)
     qPassword.grid(row=2,column=0)
-    password = tk.Label(popup, text="Password:",width = 13,anchor ='w')
+    password = tk.Label(popup, text="Password:",width = 13,anchor ='w',bg="white")
     password.grid(row=2,column=1)
     passEnt = tk.Entry(popup,bg="#e1e1e1",width = 22)
     passEnt.grid(row=2,column=2,columnspan=3)
 
-    qLan = tk.Label(popup, text="?",pady=4,width = 4)
+    qLan = tk.Label(popup, text="?",pady=4,width = 4,bg="white")
     qLan.configure(font=f)
     qLan.grid(row=3,column=0)
-    lan = tk.Label(popup, text="Language:",width = 13,anchor ='w')
+    lan = tk.Label(popup, text="Language:",width = 13,anchor ='w',bg="white")
     lan.grid(row=3,column=1)
     var = tk.StringVar(popup)
     var.set("Untilted")
@@ -362,7 +379,7 @@ menu = tk.Menu(root)
 root.config(menu=menu)
 
 subMenu = tk.Menu(menu)
-menu.add_cascade(label = "1 ITEM", menu = subMenu)
+menu.add_cascade(label = "Settings", menu = subMenu)
 subMenu.add_command(label = "SubItem 1")
 subMenu.add_command(label = "SubItem 2")
 subMenu.add_command(label = "SubItem 3")
@@ -370,9 +387,9 @@ subMenu.add_command(label = "SubItem 4")
 
 subsubMenu = tk.Menu(subMenu)
 subMenu.add_cascade(label = "SubSubMenu",menu = subsubMenu)
-subsubMenu.add_cascade(label = "subsub 1")
-subsubMenu.add_cascade(label = "subsub 2")
-subsubMenu.add_cascade(label = "subsub 3")
+subsubMenu.add_command(label = "subsub 1")
+subsubMenu.add_command(label = "subsub 2")
+subsubMenu.add_command(label = "subsub 3")
 
 
 #####################################################HERE IT STARTS#############
@@ -469,5 +486,5 @@ status.pack(side = tk.BOTTOM,fill=tk.X)
 tasks = tk.Label(root, width=100,text = "TASK MENU")
 tasks.pack(fill=tk.X)
 
-
+getSavedAccSessionsInsta()
 root.mainloop()
