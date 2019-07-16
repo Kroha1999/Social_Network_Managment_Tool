@@ -13,15 +13,16 @@ import languages
 
 #outer libs
 from PIL import Image, ImageTk
+from io import BytesIO
 import os
-import urllib.request
+import requests
 import json
 
 
 
 #PROJECT DIRECTORIES###########
-if not os.path.exists("ProfilePics\\"):
-    os.makedirs("ProfilePics\\")
+if not os.path.exists("ProfilePicsMin\\"):
+    os.makedirs("ProfilePicsMin\\")
 
 
 #******************** GlobalVariables *******************
@@ -33,18 +34,45 @@ data_accounts["Instagram"] = []
 data_accounts["Facebook"] = []
 data_accounts["Twitter"] = []
 
+global myImg
+myImg = {}
 #with open('data.json', 'w') as outfile:  #TEMPORARY
 #    json.dump(data_accounts, outfile)
 #******************** FUNCTIONS *******************
 
-
 #INSTALOADER$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-def getInstaloader(username, password):
+def getInstaloader(username, password,popup):
     L = instaloader.Instaloader()
     try:
         L.login(username,password)
-        #print(L.test_login())
         return L
+    except instaloader.TwoFactorAuthRequiredException as a:
+        popup2=tk.Toplevel(popup)
+        popup2.transient(popup)
+        popup2.configure(background="white")
+        popup2.title("Follow instruction")
+        popup2.geometry("340x170")
+        popup2.resizable(0, 0)
+        
+        #info about 2FA
+        mes = tk.Label(popup2, text=str(a),bg="#f9f8e2")
+        mes.grid(row=0,column=1,columnspan=4,pady=7,padx=0)
+        f = font.Font(mes, mes.cget("font"))
+        f.configure(underline = True)
+        mes.configure(font=f)
+
+        #enter code
+        codeL = tk.Label(popup2, text="2FA code:",width = 13,anchor ='w')
+        codeL.grid(row=1,column=1)
+        code = tk.Entry(popup2,bg="#e1e1e1",width = 22)
+        code.grid(row=1,column=2,columnspan=3)
+
+        #submit
+        L.two_factor_login
+        ButConfirm = tk.Button(popup2,text="Submit",width=10,bg="white",command=L.two_factor_login(code.get()))
+        ButConfirm.grid(row=4,column=1,pady=8,sticky=tk.N)
+
+
     except Exception as e:
         print(str(e))
         tk.messagebox.showerror("Wrong Credentials",str(e))
@@ -76,17 +104,23 @@ def updateTreeView():
         data_accounts = json.load(json_file)
     #insert
     i=0
-            
+    
     for p in data_accounts[CurrentSocialNetwork]:
         if CurrentSocialNetwork == 'Instagram':
-            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]))
+            
+            global myImg
+            ima = Image.open("ProfilePicsMin//"+p['nickname']+'.png')            
+            myImg[p["imgUrl"]]=ImageTk.PhotoImage(ima)
+            
+            
+            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = myImg[p["imgUrl"]])
             myTreeView.set("Item"+str(i),'lan',languages.LANGTOCODES[p['language']])
             #myTreeView.insert("Item"+str(i), 3, str(i)+"ElSubItem"+str(3), text = str(p["password"]))
             myTreeView.insert("Item"+str(i), 0, str(i)+"ElSubItem"+str(0), text = str(p["fullName"]))
             myTreeView.insert("Item"+str(i), 1, str(i)+"ElSubItem"+str(1), text = str(p["biography"]))
-            myTreeView.insert("Item"+str(i), 2, str(i)+"ElSubItem"+str(2), text = str(p["imgUrl"]))
+            #myTreeView.insert("Item"+str(i), 2, str(i)+"ElSubItem"+str(2), text = str(p["imgUrl"]))
         i+=1
-
+   
 def updateAccountsData():
     with open('data.json', 'w') as outfile:  
         json.dump(data_accounts, outfile)
@@ -156,11 +190,8 @@ def sortAccounts():
     updateAccountsData()
     updateTreeView()
 
-        
-
 
 #promt user to enter nickname and password to the account
-
 def addAccount(name,password,lan,other_data):
     global CurrentSocialNetwork
     isNotSameAcc = True
@@ -171,12 +202,19 @@ def addAccount(name,password,lan,other_data):
             acc['fullName']=other_data['fullName']
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
+            
+            #Saving image
+            response = requests.get(other_data['imgUrl'])
+            ima = Image.open(BytesIO(response.content)) #TODO: ПЕРЕВІРИТИ збереження при додаванні аккаунту#################################################################
+            ima = ima.resize((32,32),Image.ANTIALIAS)
+            ima.save("ProfilePics//"+name+'.png')
 
 
             isNotSameAcc=False
             break
     
     if(isNotSameAcc):
+        
         data_accounts[CurrentSocialNetwork].append({
             'nickname':name,
             #'password':password,
@@ -185,9 +223,15 @@ def addAccount(name,password,lan,other_data):
             'biography':other_data['biography'],
             'imgUrl': other_data['imgUrl']
         })
+
+        #Saving image locally
+        response = requests.get(other_data['imgUrl'])
+        ima = Image.open(BytesIO(response.content)) #TODO: додати збереження при додаванні аккаунту
+        ima = ima.resize((32,32),Image.ANTIALIAS)
+        ima.save("ProfilePics//"+name+'.png')
+
     updateAccountsData()
     updateTreeView()
-
 
 def createAccount(nickEnt,passwordEnt,var,popup):
     snick = nickEnt.get()
@@ -198,18 +242,17 @@ def createAccount(nickEnt,passwordEnt,var,popup):
         tk.messagebox.showinfo("All data fields must be entered", "Please check all the fields",parent=popup)
         return
     #checking the credentials and getting login instance
-    L = getInstaloader(snick,spass)
+    L = getInstaloader(snick,spass,popup)
     
     if(L!=False):
         data = getProfileData(L,snick)#Not needed now
         addAccount(snick,spass,slan,data)
         popup.destroy()
 
-
-
 #OTHER (CUSTOM) WINDOWS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def addAccountPopUp():
-    popup=tk.Tk()
+    popup=tk.Toplevel(root)
+    popup.transient(root)
     popup.configure(background="white")
     popup.title("Enter this data to create the account")
     popup.geometry("340x170")
@@ -334,12 +377,19 @@ topLable = tk.Label(topFrame,text="Instagram accounts",padx=10,bg="white",bd=1,w
 topLable.pack(side=tk.LEFT)
 
 #$$$$$$$$$$$$$$$$$ ACCOUNTS MIDDLE PLATFORM $$$$$$$$$$$$$$$$$$$$$$$$
-myTreeView = ttk.Treeview(left_frame,height=30)
+
+ft = font.Font(family='Colibri',size=10)
+styleTree = ttk.Style()
+styleTree.configure('Calendar.Treeview',font=ft,rowheight=33)
+myTreeView = ttk.Treeview(left_frame,height=10,style='Calendar.Treeview')
+
 myTreeView.pack(fill="both", expand=True)
 myTreeView.config(columns =('lan'))
 myTreeView.column('lan',width=50,anchor=tk.CENTER)
 myTreeView.heading('#0',text='Nickname')
 myTreeView.heading('lan',text='Language')
+#preview images
+#myTreeView.bind("<Double-1>", OnClickTreeview)   NOT NEEEDED
 
 
 updateTreeView()
@@ -364,8 +414,8 @@ status.pack(side = tk.BOTTOM,fill=tk.X)
 
 
 #****************Right Workplace****************
-Tasks = tk.Label(root, width=100,text = "TASK MENU")
-Tasks.pack(fill=tk.X)
+tasks = tk.Label(root, width=100,text = "TASK MENU")
+tasks.pack(fill=tk.X)
 
 
 root.mainloop()
