@@ -41,17 +41,39 @@ myImg = {}
 #******************** FUNCTIONS *******************
 
 #INSTALOADER$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-def getInstaloader(username, password,popup):
+def submit2FA(L,code,nick,password,lan,popup,popup2):
+    try:
+        L.two_factor_login(code.get())
+        
+        if L.test_login()!=None:
+            data = getProfileData(L,nick)#Not needed now
+            addAccount(nick,password,lan,data,L)
+            
+            popup.destroy()
+            popup2.destroy()
+
+    except Exception as e:
+        print(str(e))
+        tk.messagebox.showerror("Wrong Credentials",str(e))
+    
+    
+def getInstaloader(username, password,popup,lan):
     L = instaloader.Instaloader()
     try:
         L.login(username,password)
-        return L
+        
+        if L.test_login()!=None:
+            data = getProfileData(L,username)
+            addAccount(username,password,lan,data,L)
+            popup.destroy()
+            return L
+
     except instaloader.TwoFactorAuthRequiredException as a:
         popup2=tk.Toplevel(popup)
         popup2.transient(popup)
         popup2.configure(background="white")
         popup2.title("Follow instruction")
-        popup2.geometry("340x170")
+        popup2.geometry("340x120")
         popup2.resizable(0, 0)
         
         #info about 2FA
@@ -68,15 +90,14 @@ def getInstaloader(username, password,popup):
         code.grid(row=1,column=2,columnspan=3)
 
         #submit
-        L.two_factor_login
-        ButConfirm = tk.Button(popup2,text="Submit",width=10,bg="white",command=L.two_factor_login(code.get()))
-        ButConfirm.grid(row=4,column=1,pady=8,sticky=tk.N)
-
+        #L.two_factor_login
+        ButConfirm = tk.Button(popup2,text="Submit",width=10,bg="white",command=lambda *args: submit2FA(L,code,username,password,lan,popup,popup2))
+        ButConfirm.grid(row=2,column=3,sticky=tk.N)
+        
 
     except Exception as e:
         print(str(e))
         tk.messagebox.showerror("Wrong Credentials",str(e))
-        return False
 
 def getProfileData(loginInstance,nickname):
     data = {}
@@ -116,8 +137,14 @@ def updateTreeView():
             myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = myImg[p["imgUrl"]])
             myTreeView.set("Item"+str(i),'lan',languages.LANGTOCODES[p['language']])
             #myTreeView.insert("Item"+str(i), 3, str(i)+"ElSubItem"+str(3), text = str(p["password"]))
-            myTreeView.insert("Item"+str(i), 0, str(i)+"ElSubItem"+str(0), text = str(p["fullName"]))
-            myTreeView.insert("Item"+str(i), 1, str(i)+"ElSubItem"+str(1), text = str(p["biography"]))
+            try:
+                myTreeView.insert("Item"+str(i), 0, str(i)+"ElSubItem"+str(0), text = str(p["fullName"]))
+            except:
+                pass
+            try:
+                myTreeView.insert("Item"+str(i), 1, str(i)+"ElSubItem"+str(1), text = str(p["biography"]))
+            except:
+                pass
             #myTreeView.insert("Item"+str(i), 2, str(i)+"ElSubItem"+str(2), text = str(p["imgUrl"]))
         i+=1
    
@@ -192,43 +219,46 @@ def sortAccounts():
 
 
 #promt user to enter nickname and password to the account
-def addAccount(name,password,lan,other_data):
+def addAccount(name,password,lan,other_data,loginInstance):
     global CurrentSocialNetwork
     isNotSameAcc = True
     for acc in data_accounts[CurrentSocialNetwork]:
         if acc['nickname'] == name:
-            #acc['password']=password
+            loginInstance.save_session_to_file('sessions\\'+name+'.se')
+            acc['password']=password
             acc['language']=lan
             acc['fullName']=other_data['fullName']
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
+            acc['session']='sessions\\'+name+'.se'
             
             #Saving image
             response = requests.get(other_data['imgUrl'])
-            ima = Image.open(BytesIO(response.content)) #TODO: ПЕРЕВІРИТИ збереження при додаванні аккаунту#################################################################
+            ima = Image.open(BytesIO(response.content)) 
             ima = ima.resize((32,32),Image.ANTIALIAS)
-            ima.save("ProfilePics//"+name+'.png')
+            ima.save("ProfilePicsMin//"+name+'.png')
 
 
             isNotSameAcc=False
             break
     
     if(isNotSameAcc):
-        
+        loginInstance.save_session_to_file('sessions\\'+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
             'nickname':name,
-            #'password':password,
+            'password':password,
             'language':lan,
             'fullName':other_data['fullName'],
             'biography':other_data['biography'],
-            'imgUrl': other_data['imgUrl']
+            'imgUrl': other_data['imgUrl'],
+            'session': 'sessions\\'+name+'.se'
         })
 
         #Saving image locally
         response = requests.get(other_data['imgUrl'])
-        ima = Image.open(BytesIO(response.content)) #TODO: додати збереження при додаванні аккаунту
+        ima = Image.open(BytesIO(response.content)) 
         ima = ima.resize((32,32),Image.ANTIALIAS)
-        ima.save("ProfilePics//"+name+'.png')
+        ima.save("ProfilePicsMin//"+name+'.png')
 
     updateAccountsData()
     updateTreeView()
@@ -242,13 +272,9 @@ def createAccount(nickEnt,passwordEnt,var,popup):
         tk.messagebox.showinfo("All data fields must be entered", "Please check all the fields",parent=popup)
         return
     #checking the credentials and getting login instance
-    L = getInstaloader(snick,spass,popup)
+    getInstaloader(snick,spass,popup,slan)
     
-    if(L!=False):
-        data = getProfileData(L,snick)#Not needed now
-        addAccount(snick,spass,slan,data)
-        popup.destroy()
-
+    
 #OTHER (CUSTOM) WINDOWS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def addAccountPopUp():
     popup=tk.Toplevel(root)
