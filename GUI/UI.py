@@ -8,9 +8,6 @@ from tkinter import font
 import instaloader
 from instaloader import Profile
 
-#my files
-import languages 
-
 #outer libs
 from PIL import Image, ImageTk, ImageDraw
 from io import BytesIO
@@ -18,6 +15,12 @@ import numpy as np
 import os
 import requests
 import json
+
+
+#my files
+import languages 
+import TasksFrame  
+
 
 
 
@@ -113,7 +116,6 @@ def getInstaloader(username, password,popup,lan):
         code.grid(row=1,column=2,columnspan=3)
 
         #submit
-        #L.two_factor_login
         ButConfirm = tk.Button(popup2,text="Submit",width=10,bg="white",command=lambda *args: submit2FA(L,code,username,password,lan,popup,popup2))
         ButConfirm.grid(row=2,column=3,sticky=tk.N)
         
@@ -179,9 +181,9 @@ def updateAccountsData():
 #Buttons Funcs############################
 def chooseSocial(button):
     global CurrentSocialNetwork
-    but_1.configure(bg="#68217a")
-    but_2.configure(bg="#68217a")
-    but_3.configure(bg="#68217a")
+    but_1.configure(bg="#4A148C")
+    but_2.configure(bg="#4A148C")
+    but_3.configure(bg="#4A148C")
     button.configure(bg="white")
     CurrentSocialNetwork = Accounts[str(button)]
     topLable.configure(text=CurrentSocialNetwork+" accounts")
@@ -392,7 +394,7 @@ subsubMenu.add_command(label = "subsub 2")
 subsubMenu.add_command(label = "subsub 3")
 
 
-#####################################################HERE IT STARTS#############
+##################################################### HERE IT STARTS #############
 
 #***************** Main Frames ******************
 statusbar_frame = tk.Frame(root)
@@ -401,7 +403,7 @@ statusbar_frame.pack(side=tk.BOTTOM, fill=tk.X)
 left_frame = tk.Frame(root, bg="white")
 left_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-toolbar_frame = tk.Frame(left_frame, bg="#68217a")
+toolbar_frame = tk.Frame(left_frame, bg="#4A148C")
 toolbar_frame.pack(side=tk.LEFT, fill=tk.Y)
 
 
@@ -424,9 +426,9 @@ twit = ImageTk.PhotoImage(im)
 
 but_1 = tk.Button(toolbar_frame,relief=tk.RAISED,command=lambda *args: chooseSocial(but_1), width=65,height=65,bg="white", bd=0,image = insta)
 but_1.pack(side=tk.TOP, padx=0,pady=0,fill=tk.X)
-but_2 = tk.Button(toolbar_frame,bg="#68217a", command=lambda *args: chooseSocial(but_2), width=65,height=65, bd=0,image = face)
+but_2 = tk.Button(toolbar_frame,bg="#4A148C", command=lambda *args: chooseSocial(but_2), width=65,height=65, bd=0,image = face)
 but_2.pack(side=tk.TOP, padx=0,pady=0,fill=tk.X)
-but_3 = tk.Button(toolbar_frame,bg="#68217a",command=lambda *args: chooseSocial(but_3), width=65,height=65, bd=0,image = twit)
+but_3 = tk.Button(toolbar_frame,bg="#4A148C",command=lambda *args: chooseSocial(but_3), width=65,height=65, bd=0,image = twit)
 but_3.pack(side=tk.TOP, padx=0,pady=0,fill=tk.X)
 
 
@@ -483,8 +485,12 @@ status.pack(side = tk.BOTTOM,fill=tk.X)
 
 
 #****************Right Workplace****************
-tasks = tk.Label(root, width=100,text = "TASK MENU")
-tasks.pack(fill=tk.X)
+taskBut = tk.Button(root, width=100,text = "TASK MENU")
+taskBut.pack(fill=tk.X)
 
-getSavedAccSessionsInsta()
+# ********************************* TASKS WINDOW ***********************************************
+tasks =  TasksFrame.MultipleWindows(root)
+tasks.pack(fill=tk.BOTH,expand=tk.YES)
+
+getSavedAccSessionsInsta()#####getting saved accounts
 root.mainloop()
