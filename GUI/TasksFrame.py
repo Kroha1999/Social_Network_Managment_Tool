@@ -1,15 +1,23 @@
 import tkinter as tk
+from tkinter import ttk
 from instapy_cli import client # TESTING
 from instagram_private_api import client # TESTING
 import instagram_private_api_extensions as ipae # TESTING
+#from UI import PATH_PROFILE_PICS
+import languages
+
+
 
 from tkinter.filedialog import askopenfilename
 from tkinter import tix
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw 
+import numpy as np
+import json
 import time
 
 LARGE_FONT = ("Colibri", 12) # font's family is Verdana, font's size is 12 
- 
+PATH_PROFILE_PICS = "ProfilePicsMin\\"
+
 class MultipleWindows(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
@@ -21,7 +29,7 @@ class MultipleWindows(tk.Frame):
         container.grid_columnconfigure(0,weight=1) # make the cell in grid cover the entire window
         self.frames = {} # these are pages we want to navigate to
  
-        for F in (StartPage, ChooseCategory,ChooseSocial,PostFrame): # for each page
+        for F in (StartPage, ChooseCategory,ChooseSocial,ChooseAccounts,ChooseTranslation,PostPage): # for each page
             frame = F(container, self) # create the page
             self.frames[F] = frame  # store into frames
             frame.grid(row=0, column=0, sticky="nsew") # grid it to container
@@ -121,7 +129,7 @@ class ChooseSocial(tk.Frame):
         mid_frame = tk.Frame(cent_frame, bg='white')
 
         gl_img4 = tk.PhotoImage(file='icons\\instagram_btn.png')
-        inst_btn=tk.Button(mid_frame, text='Instagram account',image=gl_img4,bd=0,bg="white",activebackground="white", command=lambda : controller.show_frame(PostFrame))
+        inst_btn=tk.Button(mid_frame, text='Instagram account',image=gl_img4,bd=0,bg="white",activebackground="white", command=lambda : controller.show_frame(ChooseAccounts))
         inst_btn.pack(side = tk.LEFT,padx=50)
 
 
@@ -206,10 +214,171 @@ def choosePhoto(mybtn):
 #        func()
 
 
-class PostFrame(tk.Frame):
+def circle_img(img, offset=0):
+    img=img.convert("RGB")
+    npImage=np.array(img)
+    h,w=img.size
+
+    # Create same size alpha layer with circle
+    alpha = Image.new('L', img.size,0)
+    draw = ImageDraw.Draw(alpha)
+    draw.pieslice([0,0,h,w],0,360,fill=255)
+
+    # Convert alpha Image to numpy array
+    npAlpha=np.array(alpha)
+    
+    # Add alpha layer to RGB
+    npImage=np.dstack((npImage,npAlpha))    
+    
+    result = Image.fromarray(npImage)
+    return result
+
+
+data_choose_acc = {}
+data_chosen_acc = {}
+global myImg
+myImg = {}
+
+
+def updateTree(tree,insert_data):
+    i=0
+    for acc in insert_data['Instagram']:
+        global myImg
+        ima = circle_img(Image.open(PATH_PROFILE_PICS+acc['nickname']+'.png'))
+        myImg[acc["imgUrl"]]=ImageTk.PhotoImage(ima)
+            
+        tree.insert('', i, "Item"+str(i), text = str(acc["nickname"]),image = myImg[acc["imgUrl"]])
+        tree.set("Item"+str(i),'soc',"Instagram")
+        tree.set("Item"+str(i),'soc',)
+        tree.set("Item"+str(i),'lan',languages.LANGTOCODES[acc['language']])
+
+        i+=1
+ 
+
+def updateChooseTrees(chooseTree,chosenTree,choose=True):
+    global data_choose_acc
+    global data_chosen_acc
+
+    data_accounts = {}
+    
+    if data_choose_acc == {} and data_chosen_acc == {}:
+        with open('data.json') as json_file:  
+            data_accounts = json.load(json_file)
+        data_choose_acc = data_accounts
+        data_chosen_acc['Instagram'] = []
+        data_chosen_acc['Facebook'] = []
+        data_chosen_acc['Twitter'] = []
+        updateTree(chooseTree,data_choose_acc)
+        return
+
+    
+    if choose == True:
+        moveItems = chooseTree.selection()
+        el_num=0
+
+        for item in moveItems:
+           
+            for el in data_choose_acc['Instagram']:
+                if el['nickname'] == chooseTree.item(item)['text']:
+                    data_chosen_acc['Instagram'].append(data_choose_acc['Instagram'].pop(el_num))
+                    print(data_chosen_acc['Instagram'][-1])
+                el_num = el_num + 1
+            el_num = 0
+
+    else:
+        moveItems = chosenTree.selection()
+        el_num=0
+
+        for item in moveItems:
+           
+            for el in data_chosen_acc['Instagram']:
+                if el['nickname'] == chosenTree.item(item)['text']:
+                    data_choose_acc['Instagram'].append(data_chosen_acc['Instagram'].pop(el_num))
+                    print(data_choose_acc['Instagram'][-1])
+                el_num = el_num + 1
+            el_num = 0
+    
+    chooseTree.delete(*chooseTree.get_children())
+    chosenTree.delete(*chosenTree.get_children())
+    updateTree(chooseTree,data_choose_acc)
+    updateTree(chosenTree,data_chosen_acc)
+
+def check_and_go(func=None):
+    global data_chosen_acc
+    if data_chosen_acc['Instagram']==[] and data_chosen_acc['Facebook']==[] and data_chosen_acc['Twitter']==[]:
+        tk.messagebox.showerror("Please choose accounts","At least 1 account must be chosen")
+        return
+    if func != None:
+        func()
+
+class ChooseAccounts(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         cent_frame = tk.Frame(self, bg='white')
+
+        
+        ft = ('Colibri',10)
+        styleTree = ttk.Style()
+        styleTree.configure('Calendar.Treeview',font=ft,rowheight=33)
+        
+        choose_frame = tk.Frame(cent_frame,bg='white')
+        
+        ## Treeview with objects to choose
+        chooseTreeView = ttk.Treeview(choose_frame,height=15,style='Calendar.Treeview')
+        chooseTreeView.config(columns =('soc','lan'))
+        chooseTreeView.column('soc',width=75,anchor=tk.CENTER)
+        chooseTreeView.heading('soc',text='Social')
+        chooseTreeView.column('lan',width=75,anchor=tk.CENTER)
+        chooseTreeView.heading('lan',text='Language')
+        chooseTreeView.column('#0',width=150,anchor=tk.CENTER)
+        chooseTreeView.heading('#0',text='Nickname')
+        chooseTreeView.pack(side = tk.LEFT)
+        
+        ## choose buttons frame
+        button_frame = tk.Frame(choose_frame,bg='white')
+        btChoose = tk.Button(button_frame,text = "CHOOSE\nSELECTED",width=13,command = lambda *args: updateChooseTrees(chooseTreeView,chosenTreeView,True))
+        btChoose.pack(side=tk.TOP,pady=10,padx=10)
+        btChoose = tk.Button(button_frame,text = "UNCHOOSE\nSELECTED",width=13,command = lambda *args: updateChooseTrees(chooseTreeView,chosenTreeView,False))
+        btChoose.pack(side=tk.TOP,pady=10,padx=10)
+        button_frame.pack(side = tk.LEFT,fill="both", expand=True,pady=200)
+
+
+        ## TreeView with chosen objects
+        chosenTreeView = ttk.Treeview(choose_frame,height=15,style='Calendar.Treeview')
+        
+        chosenTreeView.config(columns =('soc','lan'))
+        chosenTreeView.column('soc',width=75,anchor=tk.CENTER)
+        chosenTreeView.heading('soc',text='Social')
+        chosenTreeView.column('lan',width=75,anchor=tk.CENTER)
+        chosenTreeView.heading('lan',text='Language')
+        chosenTreeView.column('#0',width=150,anchor=tk.CENTER)
+        chosenTreeView.heading('#0',text='Nickname')
+        chosenTreeView.pack(side = tk.LEFT)
+
+        #Button confirm
+        btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
+                                command = lambda *args: check_and_go(lambda : controller.show_frame(ChooseTranslation)))
+        btConfirm.pack(side= tk.BOTTOM)
+
+        choose_frame.pack(side = tk.TOP, pady=10)
+        cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
+        
+        updateChooseTrees(chooseTreeView,chosenTreeView)
+
+class ChooseTranslation(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        cent_frame = tk.Frame(self, bg='white')
+        label = tk.Label(cent_frame,text="HERE \nYOU NEED TO CHOOSE WHETHER \nTO TRANSLATE YOUR POST OR NOT", bg="white",font = "Calibri 20", fg = "#4A148C" )
+        label.pack(side = tk.TOP)
+        cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
+
+
+class PostPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        cent_frame = tk.Frame(self, bg='white')
+        
 
         global choosePhotoImg
         choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
@@ -240,7 +409,7 @@ class PostFrame(tk.Frame):
         no_change_2_text.pack(side=tk.TOP,pady=5)
 
         submit_btn = tk.Button(cent_frame,bd=1,width = 50,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "SUBMIT",
-                                    font='Calibri 12 bold', command = lambda *args: sendPost(choosePhotoImg, no_change_1_text.get("1.0",'end-1c'), change_text.get("1.0",'end-1c'), no_change_2_text.get("1.0",'end-1c'),func=None) )
+                                    font='Calibri 12 bold',command=lambda : controller.show_frame(StartPage))#, command = lambda *args: sendPost(choosePhotoImg, no_change_1_text.get("1.0",'end-1c'), change_text.get("1.0",'end-1c'), no_change_2_text.get("1.0",'end-1c'),func=None) )
         submit_btn.pack(side=tk.TOP,pady=5)
 
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)

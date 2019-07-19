@@ -75,8 +75,11 @@ def submit2FA(L,code,nick,password,lan,popup,popup2):
         L.two_factor_login(code.get())
         
         if L.test_login()!=None:
+           # with client(nick,password) as cli:################################
+            #    coockie = cli.get_cookie()    ##############################################
+
             data = getProfileData(L,nick)#Not needed now
-            addAccount(nick,password,lan,data,L)
+            addAccount(nick,password,lan,data,L)#,coockie)
             
             popup.destroy()
             popup2.destroy()
@@ -91,9 +94,12 @@ def getInstaloader(username, password,popup,lan):
     try:
         L.login(username,password)
         
+        
+        #with client(username,password) as cli:################################
+        #    coockie = cli.get_cookie()    ##############################################
         if L.test_login()!=None:
             data = getProfileData(L,username)
-            addAccount(username,password,lan,data,L)
+            addAccount(username,password,lan,data,L)#,coockie)
             popup.destroy()
             return L
 
@@ -267,7 +273,7 @@ def circle_img(img, offset=0):
     return result
 
 #promt user to enter nickname and password to the account
-def addAccount(name,password,lan,other_data,loginInstance):
+def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
     global CurrentSocialNetwork
     isNotSameAcc = True
     for acc in data_accounts[CurrentSocialNetwork]:
@@ -279,6 +285,7 @@ def addAccount(name,password,lan,other_data,loginInstance):
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
             acc['session']=PATH_SESSIONS_INSTALOADER+name+'.se'
+           ###################### acc['coockie']=coockie
              
             
             #Saving image
@@ -294,13 +301,14 @@ def addAccount(name,password,lan,other_data,loginInstance):
     if(isNotSameAcc):
         loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
-            'nickname':name,
-            'password':password,
-            'language':lan,
-            'fullName':other_data['fullName'],
-            'biography':other_data['biography'],
+            'nickname': name,
+            'password': password,
+            'language': lan,
+            'fullName': other_data['fullName'],
+            'biography': other_data['biography'],
             'imgUrl': other_data['imgUrl'],
             'session': PATH_SESSIONS_INSTALOADER+name+'.se'
+           ################## 'coockie': coockie
         })
 
         #Saving image locally
