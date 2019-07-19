@@ -7,6 +7,7 @@ from tkinter import font
 #instagram
 import instaloader
 from instaloader import Profile
+from instapy_cli import client
 
 #outer libs
 from PIL import Image, ImageTk, ImageDraw
@@ -26,7 +27,7 @@ import TasksFrame
 
 #******************** CONSTANTS *************************
 PATH_PROFILE_PICS = "ProfilePicsMin\\"
-PATH_SESSIONS_INSTAGRAM = "sessions\\"
+PATH_SESSIONS_INSTALOADER = "sessions_instaloader\\"
 
 #******************** GlobalVariables *******************
 CurrentSocialNetwork = "Instagram"
@@ -34,6 +35,8 @@ Accounts={".!frame2.!frame.!button":"Instagram",".!frame2.!frame.!button2":"Face
 
 #here will be saved opened from file sessions Instagram 
 accountsInstancesInsta={}
+accountsInstancesInsta_post={}
+
 
 #General accounts data representation
 data_accounts = {}
@@ -50,8 +53,8 @@ myImg = {}
 #PROJECT DIRECTORIES creation if absent###########
 if not os.path.exists(PATH_PROFILE_PICS):
     os.makedirs(PATH_PROFILE_PICS)
-if not os.path.exists(PATH_SESSIONS_INSTAGRAM):
-    os.makedirs(PATH_SESSIONS_INSTAGRAM)
+if not os.path.exists(PATH_SESSIONS_INSTALOADER):
+    os.makedirs(PATH_SESSIONS_INSTALOADER)
 
 
 #******************** FUNCTIONS *******************
@@ -269,13 +272,14 @@ def addAccount(name,password,lan,other_data,loginInstance):
     isNotSameAcc = True
     for acc in data_accounts[CurrentSocialNetwork]:
         if acc['nickname'] == name:
-            loginInstance.save_session_to_file(PATH_SESSIONS_INSTAGRAM+name+'.se')
+            loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
             acc['password']=password
             acc['language']=lan
             acc['fullName']=other_data['fullName']
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
-            acc['session']=PATH_SESSIONS_INSTAGRAM+name+'.se'
+            acc['session']=PATH_SESSIONS_INSTALOADER+name+'.se'
+             
             
             #Saving image
             response = requests.get(other_data['imgUrl'])
@@ -288,7 +292,7 @@ def addAccount(name,password,lan,other_data,loginInstance):
             break
     
     if(isNotSameAcc):
-        loginInstance.save_session_to_file(PATH_SESSIONS_INSTAGRAM+name+'.se')
+        loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
             'nickname':name,
             'password':password,
@@ -296,7 +300,7 @@ def addAccount(name,password,lan,other_data,loginInstance):
             'fullName':other_data['fullName'],
             'biography':other_data['biography'],
             'imgUrl': other_data['imgUrl'],
-            'session': PATH_SESSIONS_INSTAGRAM+name+'.se'
+            'session': PATH_SESSIONS_INSTALOADER+name+'.se'
         })
 
         #Saving image locally
@@ -350,7 +354,7 @@ def addAccountPopUp():
     qPassword.grid(row=2,column=0)
     password = tk.Label(popup, text="Password:",width = 13,anchor ='w',bg="white")
     password.grid(row=2,column=1)
-    passEnt = tk.Entry(popup,bg="#e1e1e1",width = 22)
+    passEnt = tk.Entry(popup,bg="#e1e1e1",show="*",width = 22)
     passEnt.grid(row=2,column=2,columnspan=3)
 
     qLan = tk.Label(popup, text="?",pady=4,width = 4,bg="white")
