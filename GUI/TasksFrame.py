@@ -1,19 +1,19 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter.filedialog import askopenfilename
+
 from instapy_cli import client # TESTING
 from instagram_private_api import client # TESTING
 import instagram_private_api_extensions as ipae # TESTING
-#from UI import PATH_PROFILE_PICS
-import languages
 
-
-
-from tkinter.filedialog import askopenfilename
-from tkinter import tix
 from PIL import Image, ImageTk, ImageDraw 
 import numpy as np
 import json
 import time
+import copy
+
+#my files
+import languages
 
 LARGE_FONT = ("Colibri", 12) # font's family is Verdana, font's size is 12 
 PATH_PROFILE_PICS = "ProfilePicsMin\\"
@@ -204,15 +204,6 @@ def choosePhoto(mybtn):
         mybtn.configure(image = choosePhotoImg, text = str(path))
 
 
-#USERNAME = "_testaccoun_"
-#PASSWORD = ""
-#def sendPost(photo, nc_text1, desc_text, nc_text2,func=None):
-#    #TODO:UPLOAD PHOTOS AND COOKIE FILES ON REGISTER
-#    with client(USERNAME,PASSWORD) as cli:
-#        cli.upload(photo,nc_text1+desc_text+nc_text2)
-#    if func != None:
-#        func()
-
 
 def circle_img(img, offset=0):
     img=img.convert("RGB")
@@ -234,14 +225,38 @@ def circle_img(img, offset=0):
     return result
 
 
-data_choose_acc = {}
+#GLOBAL CHOSEN ACCOUNTS VARIABLES
+global data_chosen_acc 
+global data_choose_acc
+
+with open('data.json') as json_file:  
+        data_choose_acc = json.load(json_file)
 data_chosen_acc = {}
+
+data_chosen_acc['Instagram'] = []
+data_chosen_acc['Facebook'] = []
+data_chosen_acc['Twitter'] = []
+
+#GLOBAL CHOSEN TRANSLATION FOR ACCOUNTS VARIABLES
+global data_choose_trans
+global data_chosen_trans
+
+data_choose_trans = {}
+data_chosen_trans = {}
+
+data_chosen_trans['Instagram'] = []
+data_chosen_trans['Facebook'] = []
+data_chosen_trans['Twitter'] = []
+
+
+#GLOBAL IMAGE VARIABLE
 global myImg
 myImg = {}
 
 
 def updateTree(tree,insert_data):
     i=0
+    
     for acc in insert_data['Instagram']:
         global myImg
         ima = circle_img(Image.open(PATH_PROFILE_PICS+acc['nickname']+'.png'))
@@ -255,74 +270,53 @@ def updateTree(tree,insert_data):
         i+=1
  
 
-def updateChooseTrees(chooseTree,chosenTree,choose=True):
-    global data_choose_acc
-    global data_chosen_acc
+def moveEl(trVFrom,trVTo,datasetFrom,datasetTo):
+    moveItems = trVFrom.selection()
 
-    data_accounts = {}
-    
-    if data_choose_acc == {} and data_chosen_acc == {}:
-        with open('data.json') as json_file:  
-            data_accounts = json.load(json_file)
-        data_choose_acc = data_accounts
-        data_chosen_acc['Instagram'] = []
-        data_chosen_acc['Facebook'] = []
-        data_chosen_acc['Twitter'] = []
-        updateTree(chooseTree,data_choose_acc)
-        return
-
-    
-    if choose == True:
-        moveItems = chooseTree.selection()
-        el_num=0
-
-        for item in moveItems:
+    el_num=0
+    for item in moveItems:
            
-            for el in data_choose_acc['Instagram']:
-                if el['nickname'] == chooseTree.item(item)['text']:
-                    data_chosen_acc['Instagram'].append(data_choose_acc['Instagram'].pop(el_num))
-                    print(data_chosen_acc['Instagram'][-1])
-                el_num = el_num + 1
-            el_num = 0
-
-    else:
-        moveItems = chosenTree.selection()
-        el_num=0
-
-        for item in moveItems:
+            for el in datasetFrom['Instagram']:
            
-            for el in data_chosen_acc['Instagram']:
-                if el['nickname'] == chosenTree.item(item)['text']:
-                    data_choose_acc['Instagram'].append(data_chosen_acc['Instagram'].pop(el_num))
-                    print(data_choose_acc['Instagram'][-1])
+                if el['nickname'] == trVFrom.item(item)['text']:
+                    datasetTo['Instagram'].append(datasetFrom['Instagram'].pop(el_num))
+
                 el_num = el_num + 1
+           
             el_num = 0
     
-    chooseTree.delete(*chooseTree.get_children())
-    chosenTree.delete(*chosenTree.get_children())
-    updateTree(chooseTree,data_choose_acc)
-    updateTree(chosenTree,data_chosen_acc)
+    trVFrom.delete(*trVFrom.get_children())
+    trVTo.delete(*trVTo.get_children())
+    updateTree(trVFrom,datasetFrom)
+    updateTree(trVTo,datasetTo)
 
-def check_and_go(func=None):
+
+def check_and_go(mydata,func=None):
     global data_chosen_acc
-    if data_chosen_acc['Instagram']==[] and data_chosen_acc['Facebook']==[] and data_chosen_acc['Twitter']==[]:
+    global data_choose_trans
+
+    if mydata['Instagram']==[] and mydata['Facebook']==[] and mydata['Twitter']==[]:
         tk.messagebox.showerror("Please choose accounts","At least 1 account must be chosen")
         return
+
     if func != None:
+        data_choose_trans = copy.deepcopy(data_chosen_acc)
         func()
 
 class ChooseAccounts(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        
+        global data_chosen_acc 
+        global data_choose_acc
         cent_frame = tk.Frame(self, bg='white')
 
-        
         ft = ('Colibri',10)
         styleTree = ttk.Style()
         styleTree.configure('Calendar.Treeview',font=ft,rowheight=33)
         
         choose_frame = tk.Frame(cent_frame,bg='white')
-        
+
         ## Treeview with objects to choose
         chooseTreeView = ttk.Treeview(choose_frame,height=15,style='Calendar.Treeview')
         chooseTreeView.config(columns =('soc','lan'))
@@ -336,9 +330,9 @@ class ChooseAccounts(tk.Frame):
         
         ## choose buttons frame
         button_frame = tk.Frame(choose_frame,bg='white')
-        btChoose = tk.Button(button_frame,text = "CHOOSE\nSELECTED",width=13,command = lambda *args: updateChooseTrees(chooseTreeView,chosenTreeView,True))
+        btChoose = tk.Button(button_frame,text = "CHOOSE\nSELECTED",width=13,command = lambda *args: moveEl(chooseTreeView,chosenTreeView,data_choose_acc,data_chosen_acc))
         btChoose.pack(side=tk.TOP,pady=10,padx=10)
-        btChoose = tk.Button(button_frame,text = "UNCHOOSE\nSELECTED",width=13,command = lambda *args: updateChooseTrees(chooseTreeView,chosenTreeView,False))
+        btChoose = tk.Button(button_frame,text = "UNCHOOSE\nSELECTED",width=13,command = lambda *args: moveEl(chosenTreeView,chooseTreeView,data_chosen_acc,data_choose_acc))
         btChoose.pack(side=tk.TOP,pady=10,padx=10)
         button_frame.pack(side = tk.LEFT,fill="both", expand=True,pady=200)
 
@@ -357,20 +351,107 @@ class ChooseAccounts(tk.Frame):
 
         #Button confirm
         btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
-                                command = lambda *args: check_and_go(lambda : controller.show_frame(ChooseTranslation)))
+                                command = lambda *args: check_and_go(data_chosen_acc,lambda : controller.show_frame(ChooseTranslation)))
         btConfirm.pack(side= tk.BOTTOM)
 
         choose_frame.pack(side = tk.TOP, pady=10)
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
         
-        updateChooseTrees(chooseTreeView,chosenTreeView)
+        updateTree(chooseTreeView,data_choose_acc)
+        updateTree(chosenTreeView,data_chosen_acc)
+
+
+def show_choose_trans(var,choose_frame,chooseTree=None,chosenTree=None):
+    global data_chosen_trans 
+    global data_choose_trans
+
+    if var.get() != 2:
+        try:
+            choose_frame.pack_forget()
+        except:
+            pass
+    else:
+        try:
+            choose_frame.pack()
+            updateTree(chooseTree, data_choose_trans)
+            updateTree(chosenTree, data_chosen_trans)
+        except:
+            pass
 
 class ChooseTranslation(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        global data_chosen_trans
+        global data_choose_trans
         cent_frame = tk.Frame(self, bg='white')
-        label = tk.Label(cent_frame,text="HERE \nYOU NEED TO CHOOSE WHETHER \nTO TRANSLATE YOUR POST OR NOT", bg="white",font = "Calibri 20", fg = "#4A148C" )
-        label.pack(side = tk.TOP)
+        
+        
+        var = tk.IntVar()
+        var.set(0)
+        
+
+        label = tk.Label(cent_frame,text="HERE \nYOU NEED TO CHOOSE WHETHER \nTO TRANSLATE OPTION OF THE POST",
+                             bg="white",font = "Calibri 20", fg = "#4A148C" )
+        label.pack(side = tk.TOP,pady=20)
+
+        radio_not_trans = tk.Radiobutton(cent_frame,text="Not translate (keep the description \nof the post in the same language for all account)",
+                            bg="white",font = "Calibri 12", fg = "#4A148C", variable = var, value = 0,width = 100,command = lambda: show_choose_trans(var,choose_frame) )#36
+        
+        
+        radio_trans = tk.Radiobutton(cent_frame,text="  Translate post according to the each account language",#53
+                            bg="white",font = "Calibri 12", fg = "#4A148C", variable = var, value = 1,width = 100,command = lambda: show_choose_trans(var,choose_frame) )
+        
+
+        radio_trans_opt = tk.Radiobutton(cent_frame,text="Translate post according to the CHOSEN account language\nother accounts will keep the post description \nin original language",
+                            bg="white",font = "Calibri 12", fg = "#4A148C", variable = var, value = 2,width = 100,command = lambda: show_choose_trans(var,choose_frame,chooseTransTree,chosenTransTree) )
+        
+        
+        radio_not_trans.pack(side = tk.TOP,pady=5)
+        radio_trans.pack(side = tk.TOP,pady=5)
+        radio_trans_opt.pack(side = tk.TOP,pady=5)
+        
+        #this is hidden frame##########################################################
+        choose_frame = tk.Frame(cent_frame,bg = 'white')
+        lab = tk.Label(choose_frame,bg = 'white', text = "!!!!!!!!!!!!!HIDDEN FRAME!!!!!!!!!!!!!!!!")
+        lab.pack(side = tk.TOP)
+        
+        ## Treeview with objects to choose
+        chooseTransTree = ttk.Treeview(choose_frame,height=15,style='Calendar.Treeview')
+        chooseTransTree.config(columns =('soc','lan'))
+        chooseTransTree.column('soc',width=75,anchor=tk.CENTER)
+        chooseTransTree.heading('soc',text='Social')
+        chooseTransTree.column('lan',width=75,anchor=tk.CENTER)
+        chooseTransTree.heading('lan',text='Language')
+        chooseTransTree.column('#0',width=150,anchor=tk.CENTER)
+        chooseTransTree.heading('#0',text='Nickname')
+        chooseTransTree.pack(side = tk.LEFT)
+        
+         ## choose buttons frame
+        button_frame = tk.Frame(choose_frame,bg='white')
+        btChoose = tk.Button(button_frame,text = "CHOOSE\nSELECTED",width=13,command = lambda *args: moveEl(chooseTransTree,chosenTransTree,data_choose_trans,data_chosen_trans))
+        btChoose.pack(side=tk.TOP,pady=10,padx=10)
+        btChoose = tk.Button(button_frame,text = "UNCHOOSE\nSELECTED",width=13,command = lambda *args: moveEl(chosenTransTree,chooseTransTree,data_chosen_trans,data_choose_trans))
+        btChoose.pack(side=tk.TOP,pady=10,padx=10)
+        button_frame.pack(side = tk.LEFT,fill="both", expand=True,pady=200)
+
+
+        ## TreeView with chosen objects
+        chosenTransTree = ttk.Treeview(choose_frame,height=15,style='Calendar.Treeview')
+        
+        chosenTransTree.config(columns =('soc','lan'))
+        chosenTransTree.column('soc',width=75,anchor=tk.CENTER)
+        chosenTransTree.heading('soc',text='Social')
+        chosenTransTree.column('lan',width=75,anchor=tk.CENTER)
+        chosenTransTree.heading('lan',text='Language')
+        chosenTransTree.column('#0',width=150,anchor=tk.CENTER)
+        chosenTransTree.heading('#0',text='Nickname')
+        chosenTransTree.pack(side = tk.LEFT)
+
+        #Button confirm
+        btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
+                                command = lambda *args: controller.show_frame(PostPage))
+        btConfirm.pack(side= tk.BOTTOM)
+
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
 
 
@@ -379,7 +460,7 @@ class PostPage(tk.Frame):
         tk.Frame.__init__(self, parent)
         cent_frame = tk.Frame(self, bg='white')
         
-
+        
         global choosePhotoImg
         choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
         choosePh = tk.Button(cent_frame, image=choosePhotoImg,bd=1,bg="white",command = lambda *args: choosePhoto(choosePh))
