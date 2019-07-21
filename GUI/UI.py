@@ -35,7 +35,6 @@ Accounts={".!frame2.!frame.!button":"Instagram",".!frame2.!frame.!button2":"Face
 
 #here will be saved opened from file sessions Instagram 
 accountsInstancesInsta={}
-accountsInstancesInsta_post={}
 
 
 #General accounts data representation
@@ -68,6 +67,7 @@ def getSavedAccSessionsInsta():
         session = acc['session']
         accountsInstancesInsta[nick] = instaloader.Instaloader()
         accountsInstancesInsta[nick].load_session_from_file(nick,session)
+        #accountsInstancesInsta[nick]
         #print(accountsInstancesInsta[nick].test_login())
         
 def submit2FA(L,code,nick,password,lan,popup,popup2):
@@ -77,7 +77,6 @@ def submit2FA(L,code,nick,password,lan,popup,popup2):
         if L.test_login()!=None:
            # with client(nick,password) as cli:################################
             #    coockie = cli.get_cookie()    ##############################################
-
             data = getProfileData(L,nick)#Not needed now
             addAccount(nick,password,lan,data,L)#,coockie)
             
@@ -164,12 +163,14 @@ def updateTreeView():
         if CurrentSocialNetwork == 'Instagram':
             
             global myImg
-            #ima = Image.open(PATH_PROFILE_PICS+p['nickname']+'.png')            
-            ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
-            myImg[p["imgUrl"]]=ImageTk.PhotoImage(ima)
+            try:
+                ima = myImg[p['nickname']+p["imgUrl"]]
+            except:
+                ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
+                myImg[p['nickname']+p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
             
-            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = myImg[p["imgUrl"]])
+            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = myImg[p['nickname']+p["imgUrl"]])
             myTreeView.set("Item"+str(i),'lan',languages.LANGTOCODES[p['language']])
             #myTreeView.insert("Item"+str(i), 3, str(i)+"ElSubItem"+str(3), text = str(p["password"]))
             try:
@@ -276,8 +277,15 @@ def circle_img(img, offset=0):
 def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
     global CurrentSocialNetwork
     isNotSameAcc = True
+    coockie = None
+    
+    
     for acc in data_accounts[CurrentSocialNetwork]:
+
         if acc['nickname'] == name:
+            with client(name,password,acc['coockie']) as cli:
+                coockie = cli.get_cookie()
+            
             loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
             acc['password']=password
             acc['language']=lan
@@ -285,7 +293,7 @@ def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
             acc['session']=PATH_SESSIONS_INSTALOADER+name+'.se'
-           ###################### acc['coockie']=coockie
+            acc['coockie']=coockie
              
             
             #Saving image
@@ -298,7 +306,7 @@ def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
             isNotSameAcc=False
             break
     
-    if(isNotSameAcc):
+    if(isNotSameAcc):        
         loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
             'nickname': name,
@@ -307,8 +315,8 @@ def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
             'fullName': other_data['fullName'],
             'biography': other_data['biography'],
             'imgUrl': other_data['imgUrl'],
-            'session': PATH_SESSIONS_INSTALOADER+name+'.se'
-           ################## 'coockie': coockie
+            'session': PATH_SESSIONS_INSTALOADER+name+'.se'#,
+            #'coockie': coockie
         })
 
         #Saving image locally
@@ -376,7 +384,7 @@ def addAccountPopUp():
     lanEnt.configure(font=('calibri',(10)),width = 13,background="#e1e1e1",relief=tk.GROOVE)
     lanEnt['menu'].config(font=('calibri',(10)), bg='white')
     lanEnt.grid(row=3,column=2,columnspan=3)
-
+    
     #Bottom
     popupButConfirm = tk.Button(popup,text="Confirm",width=10,bg="white",command=lambda *args: createAccount(nickEnt,passEnt,var,popup))
     popupButConfirm.grid(row=4,column=1,pady=8,sticky=tk.N)
@@ -463,7 +471,7 @@ topLable.pack(side=tk.LEFT)
 
 ft = font.Font(family='Colibri',size=10)
 styleTree = ttk.Style()
-styleTree.configure('Calendar.Treeview',font=ft,rowheight=33)
+styleTree.configure('Calendar.Treeview',font=ft,rowheight=64)
 myTreeView = ttk.Treeview(left_frame,height=10,style='Calendar.Treeview')
 
 myTreeView.pack(fill="both", expand=True)
