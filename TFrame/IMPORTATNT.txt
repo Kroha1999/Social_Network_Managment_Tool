@@ -1,0 +1,1 @@
+EACH FRAME FILE MUST BE ADDED TO TasksFrame.py and each frame class must be written into MultipleFrame controller

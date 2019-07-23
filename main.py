@@ -19,8 +19,10 @@ import json
 
 
 #my files
-import languages 
-import TasksFrame  
+from FuncFiles import languages 
+from FuncFiles import globalVal
+from TFrame    import TasksFrame 
+
 
 
 
@@ -42,11 +44,6 @@ data_accounts = {}
 data_accounts["Instagram"] = []
 data_accounts["Facebook"] = []
 data_accounts["Twitter"] = []
-
-global myImg
-myImg = {}
-
-
 
 
 #PROJECT DIRECTORIES creation if absent###########
@@ -154,23 +151,22 @@ def updateTreeView():
     #deleting old ite,s
     myTreeView.delete(*myTreeView.get_children())
     #read saved data
-    with open('data.json') as json_file:  
+    with open('data\\data.json') as json_file:  
         data_accounts = json.load(json_file)
     #insert
     i=0
     
     for p in data_accounts[CurrentSocialNetwork]:
         if CurrentSocialNetwork == 'Instagram':
-            
-            global myImg
+
             try:
-                ima = myImg[p['nickname']+p["imgUrl"]]
+                ima = globalVal.myImg[p['nickname']+p["imgUrl"]]
             except:
                 ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
-                myImg[p['nickname']+p["imgUrl"]]=ImageTk.PhotoImage(ima)
+                globalVal.myImg[p['nickname']+p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
             
-            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = myImg[p['nickname']+p["imgUrl"]])
+            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = globalVal.myImg[p['nickname']+p["imgUrl"]])
             myTreeView.set("Item"+str(i),'lan',languages.LANGTOCODES[p['language']])
             #myTreeView.insert("Item"+str(i), 3, str(i)+"ElSubItem"+str(3), text = str(p["password"]))
             try:
@@ -185,7 +181,7 @@ def updateTreeView():
         i+=1
    
 def updateAccountsData():
-    with open('data.json', 'w') as outfile:  
+    with open('data\\data.json', 'w') as outfile:  
         json.dump(data_accounts, outfile)
         
 #Buttons Funcs############################
