@@ -7,7 +7,8 @@ from tkinter import font
 #instagram
 import instaloader
 from instaloader import Profile
-from instapy_cli import client
+from instagram_private_api import Client
+#from instapy_cli import client
 
 #outer libs
 from PIL import Image, ImageTk, ImageDraw
@@ -16,6 +17,8 @@ import numpy as np
 import os
 import requests
 import json
+
+import pickle
 
 
 #my files
@@ -61,80 +64,52 @@ def getSavedAccSessionsInsta():
     global accountsInstancesInsta
     for acc in data_accounts['Instagram']:
         nick = acc['nickname']
-        session = acc['session']
-        accountsInstancesInsta[nick] = instaloader.Instaloader()
-        accountsInstancesInsta[nick].load_session_from_file(nick,session)
-        #accountsInstancesInsta[nick]
-        #print(accountsInstancesInsta[nick].test_login())
-        
-def submit2FA(L,code,nick,password,lan,popup,popup2):
-    try:
-        L.two_factor_login(code.get())
-        
-        if L.test_login()!=None:
-           # with client(nick,password) as cli:################################
-            #    coockie = cli.get_cookie()    ##############################################
-            data = getProfileData(L,nick)#Not needed now
-            addAccount(nick,password,lan,data,L)#,coockie)
-            
-            popup.destroy()
-            popup2.destroy()
+        password = acc['password']
 
-    except Exception as e:
-        print(str(e))
-        tk.messagebox.showerror("Wrong Credentials",str(e))
-    
+        cook = []
+        with open(PATH_SESSIONS_INSTALOADER+nick+'.se', "rb") as f:
+            cook = pickle.load(f)
+            f.close()
+        accountsInstancesInsta[nick] = Client(nick,password,cookie = cook )
+        print(accountsInstancesInsta[nick].authenticated_params)
+
+
     
 def getInstaloader(username, password,popup,lan):
-    L = instaloader.Instaloader()
+    cli = 0
     try:
-        L.login(username,password)
-        
-        
-        #with client(username,password) as cli:################################
-        #    coockie = cli.get_cookie()    ##############################################
-        if L.test_login()!=None:
-            data = getProfileData(L,username)
-            addAccount(username,password,lan,data,L)#,coockie)
-            popup.destroy()
-            return L
+        cli = Client(username,password)
+        print(cli.authenticated_params)
+        data = getProfileData(cli)
+        addAccount(username,password,lan,data,cli)
+        popup.destroy()
+        return cli
 
-    except instaloader.TwoFactorAuthRequiredException as a:
-        popup2=tk.Toplevel(popup)
-        popup2.transient(popup)
-        popup2.configure(background="white")
-        popup2.title("Follow instruction")
-        popup2.geometry("340x120")
-        popup2.resizable(0, 0)
-        
-        #info about 2FA
-        mes = tk.Label(popup2, text=str(a),bg="#f9f8e2")
-        mes.grid(row=0,column=1,columnspan=4,pady=7,padx=0)
-        f = font.Font(mes, mes.cget("font"))
-        f.configure(underline = True)
-        mes.configure(font=f)
+    #IT doesn't support 2FA TODO: as soon as the library will be updated
+    except Exception as ex:
+        if str(ex) == 'bad_password':
+            tk.messagebox.showerror("Wrong Credentials",'Wrong password.')
+        elif str(ex) == 'invalid_user':
+            tk.messagebox.showerror("Wrong Credentials",'Wrong username.')
+        else:
+            tk.messagebox.showerror("Wrong Credentials",'Unknown mistake. \nIt may be 2 factor authenication.\nPlease turn it off and try again.\n'+str(ex))
 
-        #enter code
-        codeL = tk.Label(popup2, text="2FA code:",width = 13,anchor ='w')
-        codeL.grid(row=1,column=1)
-        code = tk.Entry(popup2,bg="#e1e1e1",width = 22)
-        code.grid(row=1,column=2,columnspan=3)
 
-        #submit
-        ButConfirm = tk.Button(popup2,text="Submit",width=10,bg="white",command=lambda *args: submit2FA(L,code,username,password,lan,popup,popup2))
-        ButConfirm.grid(row=2,column=3,sticky=tk.N)
-        
+def getProfileData(cli):
+    uid = int(cli.authenticated_params['_uid'])
+    user_inf=cli.user_info(uid)
 
-    except Exception as e:
-        print(str(e))
-        tk.messagebox.showerror("Wrong Credentials",str(e))
 
-def getProfileData(loginInstance,nickname):
     data = {}
-    profile = Profile.from_username(loginInstance.context, nickname)
-    data['fullName']=profile.full_name
-    data['biography']=profile.biography
-    data['imgUrl']=profile.profile_pic_url
+    data['uid'] = uid
+    data['nickname'] = user_inf['user']['username']
+    data['fullName']=user_inf['user']['full_name']
+    data['biography']=user_inf['user']['biography']
+    data['imgUrl']=user_inf['user']['profile_pic_url']
+    data['cookie'] = PATH_SESSIONS_INSTALOADER+data['nickname']+'.se'
+    print('NAANANANANNANAANNANNANNANANA')
+    with open(data['cookie'], "wb") as f:
+        pickle.dump(cli.cookie_jar.dump(),f)
     
     return data
         
@@ -269,28 +244,22 @@ def circle_img(img, offset=0):
     result = Image.fromarray(npImage)
     return result
 
-#promt user to enter nickname and password to the account
-def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
+
+    #promt user to enter nickname and password to the account
+def addAccount(name,password,lan,other_data,cli):
     global CurrentSocialNetwork
-    isNotSameAcc = True
-    coockie = None
-    
+    isNotSameAcc = True    
     
     for acc in data_accounts[CurrentSocialNetwork]:
 
-        if acc['nickname'] == name:
-            with client(name,password,acc['coockie']) as cli:
-                coockie = cli.get_cookie()
+        if acc['nickname'] == other_data['nickname']:
             
-            loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
             acc['password']=password
             acc['language']=lan
             acc['fullName']=other_data['fullName']
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
-            acc['session']=PATH_SESSIONS_INSTALOADER+name+'.se'
-            acc['coockie']=coockie
-             
+            acc['cookie']=other_data['cookie']
             
             #Saving image
             response = requests.get(other_data['imgUrl'])
@@ -303,16 +272,14 @@ def addAccount(name,password,lan,other_data,loginInstance):#,coockie):
             break
     
     if(isNotSameAcc):        
-        loginInstance.save_session_to_file(PATH_SESSIONS_INSTALOADER+name+'.se')
         data_accounts[CurrentSocialNetwork].append({
-            'nickname': name,
+            'nickname': other_data['nickname'],
             'password': password,
             'language': lan,
             'fullName': other_data['fullName'],
-            'biography': other_data['biography'],
-            'imgUrl': other_data['imgUrl'],
-            'session': PATH_SESSIONS_INSTALOADER+name+'.se'#,
-            #'coockie': coockie
+            'biography':other_data['biography'],
+            'imgUrl':   other_data['imgUrl'],
+            'cookie':   other_data['cookie']
         })
 
         #Saving image locally
