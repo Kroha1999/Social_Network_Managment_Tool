@@ -38,10 +38,6 @@ PATH_SESSIONS_INSTALOADER = "sessions_instaloader\\"
 CurrentSocialNetwork = "Instagram"
 Accounts={".!frame2.!frame.!button":"Instagram",".!frame2.!frame.!button2":"Facebook",".!frame2.!frame.!button3":"Twitter"}
 
-#here will be saved opened from file sessions Instagram 
-accountsInstancesInsta={}
-
-
 #General accounts data representation
 data_accounts = {}
 data_accounts["Instagram"] = []
@@ -61,7 +57,6 @@ if not os.path.exists(PATH_SESSIONS_INSTALOADER):
 #INSTALOADER$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 def getSavedAccSessionsInsta():
-    global accountsInstancesInsta
     for acc in data_accounts['Instagram']:
         nick = acc['nickname']
         password = acc['password']
@@ -70,8 +65,8 @@ def getSavedAccSessionsInsta():
         with open(PATH_SESSIONS_INSTALOADER+nick+'.se', "rb") as f:
             cook = pickle.load(f)
             f.close()
-        accountsInstancesInsta[nick] = Client(nick,password,cookie = cook )
-        print(accountsInstancesInsta[nick].authenticated_params)
+        globalVal.accountsInstancesInsta[nick] = Client(nick,password,cookie = cook )
+        print(globalVal.accountsInstancesInsta[nick].authenticated_params)
 
 
     
@@ -107,7 +102,6 @@ def getProfileData(cli):
     data['biography']=user_inf['user']['biography']
     data['imgUrl']=user_inf['user']['profile_pic_url']
     data['cookie'] = PATH_SESSIONS_INSTALOADER+data['nickname']+'.se'
-    print('NAANANANANNANAANNANNANNANANA')
     with open(data['cookie'], "wb") as f:
         pickle.dump(cli.cookie_jar.dump(),f)
     

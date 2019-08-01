@@ -1,13 +1,19 @@
 import json
 
+#general functional instances
 global myImg
 global Task_data
 global choosePhotoImg
+
+#accounts instanses
+global accountsInstancesInsta
 
 
 def globals_init():
     global myImg
     myImg = {}
+    global accountsInstancesInsta
+    accountsInstancesInsta={}
     resetTask()
 
 

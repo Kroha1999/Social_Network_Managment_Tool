@@ -1,3 +1,10 @@
+from googletrans import Translator
+
+
+def translate(text,dest_lan='en',source='auto'):
+    trans = Translator()
+    return trans.translate(text,dest_lan,source).text
+
 CODESTOLANG = {
     'af': 'afrikaans',
     'sq': 'albanian',

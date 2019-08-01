@@ -3,6 +3,7 @@ from tkinter import ttk
 import copy
 
 
+
 import instapy_cli
 import instagram_private_api
 
@@ -15,16 +16,6 @@ from FuncFiles import funcs
 LARGE_FONT = ("Colibri", 12) 
 #________________________UI Functions_________________________________
 
-
-def check_and_go(mydata,func=None):
-
-    if mydata['Instagram']==[] and mydata['Facebook']==[] and mydata['Twitter']==[]:
-        tk.messagebox.showerror("Please choose accounts","At least 1 account must be chosen")
-        return
-
-    if func != None:
-        globalVal.Task_data['Task']['InstagramPost']['choose_trans'] = copy.deepcopy(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'])
-        func()
 
 def show_choose_trans(var,choose_frame,chooseTree=None,chosenTree=None):
     if var.get() != 2:
@@ -86,12 +77,22 @@ class ChooseAccounts(tk.Frame):
 
         #Button confirm
         btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
-                                command = lambda *args: check_and_go(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'],lambda : controller.show_frame(ChooseTranslation,True)))
+                                command = lambda *args: self.check_and_go(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'],lambda : controller.show_frame(ChooseTranslation,True)))
         btConfirm.pack(side= tk.BOTTOM)
 
         choose_frame.pack(side = tk.TOP, pady=10)
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
         self.updateView()
+    
+    def check_and_go(self,mydata,func=None):
+
+        if mydata['Instagram']==[] and mydata['Facebook']==[] and mydata['Twitter']==[]:
+            tk.messagebox.showerror("Please choose accounts","At least 1 account must be chosen")
+            return
+
+        if func != None:
+            globalVal.Task_data['Task']['InstagramPost']['choose_trans'] = copy.deepcopy(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'])
+            func()
         
     def updateView(self):
         self.chosenTreeView.delete(*self.chosenTreeView.get_children())
@@ -112,7 +113,7 @@ class ChooseTranslation(tk.Frame):
                              bg="white",font = "Calibri 20", fg = "#4A148C" )
         label.pack(side = tk.TOP,pady=20)
 
-        radio_not_trans = tk.Radiobutton(cent_frame,text="Not translate (keep the description \nof the post in the same language for all account)",
+        radio_not_trans = tk.Radiobutton(cent_frame,text="Not translate (keep the description \nof the post in the same language for all accounts)",
                             bg="white",font = "Calibri 12", fg = "#4A148C", variable = self.var, value = 0,width = 100,command = lambda: show_choose_trans(self.var,self.choose_frame) )#36
         
         
@@ -165,10 +166,29 @@ class ChooseTranslation(tk.Frame):
 
         #Button confirm
         btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
-                                command = lambda *args: controller.show_frame(PostPage,True))
+                                command = lambda *args: self.save_and_move(controller))
         btConfirm.pack(side= tk.BOTTOM)
 
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
+
+    def save_and_move(self,controller):
+
+        if self.var.get() == 0:
+            #description will be in original language
+            globalVal.Task_data['Task']['InstagramPost']['chosen_trans'] = {'Instagram':[],'Facebook':[],'Twitter':[]}
+            globalVal.Task_data['Task']['InstagramPost']['choose_trans'] = copy.deepcopy(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'])
+        
+        elif self.var.get() == 1:
+            #will be translated to each acc lang
+            globalVal.Task_data['Task']['InstagramPost']['chosen_trans'] = copy.deepcopy(globalVal.Task_data['Task']['InstagramPost']['chosen_acc'])
+            globalVal.Task_data['Task']['InstagramPost']['choose_trans'] = {'Instagram':[],'Facebook':[],'Twitter':[]}
+        
+        else:
+            # all translated and not translated accs are chosen during the process (option 3)
+            pass
+
+        controller.show_frame(PostPage,True)
+
     
     def updateView(self):
         self.var.set(0)
@@ -176,8 +196,13 @@ class ChooseTranslation(tk.Frame):
         self.chosenTransTree.delete(*self.chosenTransTree.get_children())
         self.chooseTransTree.delete(*self.chooseTransTree.get_children())
         funcs.updateTree(self.chooseTransTree,globalVal.Task_data['Task']['InstagramPost']['choose_trans'])
-        funcs.updateTree(self.chooseTransTree,globalVal.Task_data['Task']['InstagramPost']['choose_trans'])
+        #funcs.updateTree(self.chooseTransTree,globalVal.Task_data['Task']['InstagramPost']['choose_trans'])
         funcs.updateTree(self.chosenTransTree,globalVal.Task_data['Task']['InstagramPost']['chosen_trans'])
+
+
+
+
+
 
 class PostPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -211,12 +236,13 @@ class PostPage(tk.Frame):
         self.no_change_2_text.pack(side=tk.TOP,pady=5)
 
         submit_btn = tk.Button(cent_frame,bd=1,width = 50,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "SUBMIT",
-                                    font='Calibri 12 bold',command=lambda : controller.show_frame(None,False,True))#, command = lambda *args: sendPost(globalVal.choosePhotoImg, no_change_1_text.get("1.0",'end-1c'), change_text.get("1.0",'end-1c'), no_change_2_text.get("1.0",'end-1c'),func=None) )
+                                    font='Calibri 12 bold',command = lambda : self.createTask())#lambda : controller.show_frame(None,False,True))
         submit_btn.pack(side=tk.TOP,pady=5)
 
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
         
     
+
     def updateView(self):
 
         globalVal.choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
@@ -225,6 +251,25 @@ class PostPage(tk.Frame):
         self.no_change_1_text.delete('1.0',tk.END)
         self.change_text.delete('1.0',tk.END)
         self.no_change_2_text.delete('1.0',tk.END)
+    
+    def createTask(self):
+        not_translate_text1 = self.no_change_1_text.get('1.0',tk.END)
+        translate_text = self.change_text.get('1.0',tk.END)
+        not_translate_text2 = self.no_change_2_text.get('1.0',tk.END)
         
+        print("\nTRANSLATED ACCOUNTS:")
+        for acc in globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram']:
+            acc['postText']= not_translate_text1 + languages.translate(translate_text,acc['language']) + not_translate_text2
+            funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
+
+        print("\nNOT TRANSLATED ACCOUNTS:")
+        for acc in globalVal.Task_data['Task']['InstagramPost']['choose_trans']['Instagram']:
+            acc['postText'] = not_translate_text1 + translate_text + not_translate_text2 
+            funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
+
+        
+        #funcs.print(str(globalVal.Task_data['Task']['InstagramPost']['chosen_trans']))
+  
+
         
 

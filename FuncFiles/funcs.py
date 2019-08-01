@@ -3,6 +3,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk, ImageDraw 
 from tkinter.filedialog import askopenfilename
 import time
+import sys
 import numpy as np
 
 from FuncFiles import languages 
@@ -14,7 +15,14 @@ MAX_UI_X = 600
 MAX_UI_Y = 314
 
 # ************************** FUNCTIONS *******************************
+#PRINT UTF8 + UNICODE SMILES
+
+def print(text):
+    text = text.encode('utf-8')
+    sys.stdout.buffer.write(text)
+
 #_________________________DATA UI Functions______________________________
+
 def upTask(value,lv_1,lv_3=None):
     globalVal.resetTask()
     
