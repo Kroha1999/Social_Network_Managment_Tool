@@ -45,8 +45,8 @@ def resetTask():
                     'Twitter':[]
                 },        
 
-                'mini_photo':None,        #filetype - minimized photo
-                'photo_location': None,   #path
+                'photo_path':None,        #path
+                
                 'not_change_text1': None, #upper not changeble description
                 'description':None,       #translateble text
                 'not_change_text2': None, #lower not changeble description

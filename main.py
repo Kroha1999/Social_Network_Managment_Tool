@@ -6,7 +6,7 @@ from tkinter import font
 
 #instagram
 import instaloader
-from instaloader import Profile
+#from instaloader import Profile
 from instagram_private_api import Client
 #from instapy_cli import client
 

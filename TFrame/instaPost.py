@@ -5,7 +5,8 @@ import copy
 
 
 import instapy_cli
-import instagram_private_api
+from instagram_private_api import Client,MediaRatios
+from instagram_private_api_extensions import media
 
 #my files
 from FuncFiles import languages 
@@ -212,64 +213,146 @@ class PostPage(tk.Frame):
         
 
         globalVal.choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
+        
         self.choosePh = tk.Button(cent_frame, image=globalVal.choosePhotoImg,bd=1,bg="white",command = lambda *args: funcs.choosePhoto(self.choosePh))
         self.choosePh.pack(side=tk.TOP,pady=10)
         
-        lab_nc1t=tk.Label(cent_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
-        lab_nc1t.pack(side=tk.TOP,pady=5)
-        #At least one of 3 textboxes must be not empty
-        #Unchangeble text Field 1 (This text will not be translated)
-        self.no_change_1_text = tk.Text(cent_frame,bg='white',bd=1,width =50,height = 2)
-        self.no_change_1_text.pack(side=tk.TOP,pady=5)
+        #_Frame just to keep place between buttons and image after pack/unpack actions
+        self.keep_place_frame = tk.Frame(cent_frame,bg = 'white') 
         
+        #__Frame to be hidden on preview
+        self.desc_frame = tk.Frame(self.keep_place_frame,bg = 'white')
+        
+        self.lab_nc1t=tk.Label(self.desc_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
+        self.lab_nc1t.pack(side=tk.TOP,pady=5)
+        #____At least one of 3 textboxes must be not empty
+        #____Unchangeble text Field 1 (This text will not be translated)
+        self.no_change_1_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 2)
+        self.no_change_1_text.pack(side=tk.TOP,pady=5)
 
-        lab_ct=tk.Label(cent_frame,text= "This is translateble description field",bg="white",font=LARGE_FONT)
-        lab_ct.pack(side=tk.TOP,pady=5)
-        #Changeble text Field (This text WILL BE translated, if translate option choosen)
-        self.change_text = tk.Text(cent_frame,bg='white',bd=1,width =50,height = 10)
+        self.lab_ct=tk.Label(self.desc_frame,text= "This is translateble description field",bg="white",font=LARGE_FONT)
+        self.lab_ct.pack(side=tk.TOP,pady=5)
+        #____Changeble text Field (This text WILL BE translated, if translate option choosen)
+        self.change_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 10)
         self.change_text.pack(side=tk.TOP,pady=5)
 
-        lab_nc2t=tk.Label(cent_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
-        lab_nc2t.pack(side=tk.TOP,pady=5)
-        #Unchangeble text Field 2 (This text will not be translated)
-        self.no_change_2_text = tk.Text(cent_frame,bg='white',bd=1,width =50,height = 2)
+        self.lab_nc2t=tk.Label(self.desc_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
+        self.lab_nc2t.pack(side=tk.TOP,pady=5)
+        #____Unchangeble text Field 2 (This text will not be translated)
+        self.no_change_2_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 2)
         self.no_change_2_text.pack(side=tk.TOP,pady=5)
 
-        submit_btn = tk.Button(cent_frame,bd=1,width = 50,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "SUBMIT",
-                                    font='Calibri 12 bold',command = lambda : self.createTask())#lambda : controller.show_frame(None,False,True))
-        submit_btn.pack(side=tk.TOP,pady=5)
+        self.desc_frame.pack(side = tk.TOP)
+        
+        #__Preview Lable
+        self.prev_text = tk.Label(self.keep_place_frame,bg="white")
 
+        self.keep_place_frame.pack(side= tk.TOP)
+
+
+        
+        self.prev_text_btn = tk.Button(cent_frame,bd=1,width = 30,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "Preview Description",
+                                    font='Calibri 12 bold',command = lambda : self.previewTask())
+        self.prev_text_btn.pack(side = tk.TOP)
+
+        final_btns = tk.Frame(cent_frame)
+
+        submit_btn = tk.Button(final_btns,bd=1,width = 30,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "PUBLISH NOW",
+                                    font='Calibri 12 bold',command = lambda : self.implementTask(controller))
+        submit_btn.pack(side=tk.LEFT)
+
+        sched_btn = tk.Button(final_btns,bd=1,width = 30,height = 2,bg='#4A148C',fg='#ffb300',activebackground="#ffb300",text = "SCHEDULE TASK",
+                                    font='Calibri 12 bold')
+        sched_btn.pack(side=tk.LEFT,padx=10)
+        
+        final_btns.pack(side=tk.TOP,pady=5)
         cent_frame.place(relx=0.5,rely=0.5, anchor=tk.CENTER)
         
+
+    def previewTask(self):
+        if self.desc_frame.winfo_ismapped():
+            self.prev_text_btn.configure(text = 'Change Description')
+            #show preview
+            self.prev_text.configure(text = self.no_change_1_text.get('1.0',tk.END)[:-1]+self.change_text.get('1.0',tk.END)[:-1]+self.no_change_2_text.get('1.0',tk.END)[:-1]) 
+            self.prev_text.pack(side = tk.TOP)
+            #hide description field
+            self.desc_frame.pack_forget()
+        else:
+            self.prev_text_btn.configure(text = 'Preview Description')
+            self.prev_text.pack_forget()
+            self.desc_frame.pack(side = tk.TOP)
     
+    def implementTask(self,controller):
+
+        answer = tk.messagebox.askquestion('','Are you shure about publishing?')
+        if answer == 'yes':   
+            
+            #each field automatically ads the '\n' in the end - manual remove 
+            not_translate_text1 = self.no_change_1_text.get('1.0',tk.END)[:-1]
+            translate_text = self.change_text.get('1.0',tk.END)[:-1]
+            not_translate_text2 = self.no_change_2_text.get('1.0',tk.END)[:-1]
+            
+            #because of missing last '\n' after translation, we need to add it manually
+            x = ''
+            print("\nSYMBOL: " + translate_text[-1:] )
+            if translate_text[-1:] == '\n':
+                x = '\n'
+            
+
+
+            print("\nTRANSLATED ACCOUNTS Insta:")
+            for acc in globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram']:
+                
+                acc['postText']= not_translate_text1 + languages.translate(translate_text,acc['language']) + x + not_translate_text2
+                funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
+
+            print("\nNOT TRANSLATED ACCOUNTS Insta:")
+            for acc in globalVal.Task_data['Task']['InstagramPost']['choose_trans']['Instagram']:
+                acc['postText'] = not_translate_text1 + translate_text + not_translate_text2 
+                funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
+            
+            try:
+                im_path = globalVal.Task_data['Task']['photo_path']
+                if im_path == '':
+                    raise Exception                
+            except:
+                tk.messagebox.showerror('No image chosen', 'Please choose an image in order to make an Instagram post')
+                return
+
+            #Publishing with translation    
+            for acc in globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram']:
+                photo_data, photo_size = media.prepare_image(im_path, aspect_ratios=MediaRatios.standard)
+                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'])
+            
+            #Publishing without translation
+            for acc in globalVal.Task_data['Task']['InstagramPost']['choose_trans']['Instagram']:
+                photo_data, photo_size = media.prepare_image(im_path, aspect_ratios=MediaRatios.standard)
+                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'])
+
+            
+            #go to the first page
+            controller.show_frame(None,False,True)
+        
+                
+        
+    
+        
+
+        
+        
 
     def updateView(self):
 
         globalVal.choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
         self.choosePh.configure(image = globalVal.choosePhotoImg)
         
+        self.prev_text_btn.configure(text = 'Preview Description')
+        self.prev_text.pack_forget()
+        self.desc_frame.pack(side = tk.TOP)
+
         self.no_change_1_text.delete('1.0',tk.END)
         self.change_text.delete('1.0',tk.END)
         self.no_change_2_text.delete('1.0',tk.END)
-    
-    def createTask(self):
-        not_translate_text1 = self.no_change_1_text.get('1.0',tk.END)
-        translate_text = self.change_text.get('1.0',tk.END)
-        not_translate_text2 = self.no_change_2_text.get('1.0',tk.END)
-        
-        print("\nTRANSLATED ACCOUNTS:")
-        for acc in globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram']:
-            acc['postText']= not_translate_text1 + languages.translate(translate_text,acc['language']) + not_translate_text2
-            funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
-
-        print("\nNOT TRANSLATED ACCOUNTS:")
-        for acc in globalVal.Task_data['Task']['InstagramPost']['choose_trans']['Instagram']:
-            acc['postText'] = not_translate_text1 + translate_text + not_translate_text2 
-            funcs.print("\n"+acc['nickname']+"  lan: "+acc['language']+"  text = "+acc['postText'])
-
-        
-        #funcs.print(str(globalVal.Task_data['Task']['InstagramPost']['chosen_trans']))
-  
 
         
 

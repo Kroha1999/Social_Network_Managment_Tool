@@ -98,19 +98,22 @@ def choosePhoto(mybtn):
     path = askopenfilename(filetypes=[("Image File",'.jpg'),("Image File",'.png')])
     if path != '':
         im = Image.open(str(path))
-        print("\n")
-        print("Before: "+str(int(im.height))+"   "+str(int(im.width)))
+        width = im.width
+        height = im.height
+        print("\nBefore: "+str(int(width))+"   "+str(int(height)))
         
-        if im.height > im.width:
-            
+    
+
+        if height > width:
+            print("\nVERTICAL\n")
             #portrait 300x240
-            if (im.height/im.width) > 1.25:
+            if (height/width) > 1.25:
                 #looking for offset to crop
-                offset = im.height-1.25*im.width
+                offset = height-1.25*width
                 print("offset "+str(offset))
                 cut_side = int(offset/2)+1
                 #cropping
-                im = im.crop([0,cut_side,im.width,im.height-cut_side])
+                im = im.crop([0,cut_side,width,height-cut_side])
                 
             #change to UI sizes by Y
     
@@ -118,14 +121,15 @@ def choosePhoto(mybtn):
             prop_x = int((float(im.size[0])*float(wpercent)))
             im = im.resize((prop_x,MAX_UI_Y), Image.ANTIALIAS)
 
-        elif im.height < im.width:
+        elif height < width:
+            print("\nHORIZONTAL\n")
             #landscape 600x314
-            if (im.width/im.height) > 1.91:
+            if (width/height) > 1.91:
                 #image will be cropped
-                offset = im.width-1.91*im.height
+                offset = width-1.91*height
                 cut_side = int(offset/2)+1
                 #cropping
-                im = im.crop([cut_side,0,im.width-cut_side,im.height])
+                im = im.crop([cut_side,0,width-cut_side,height])
             
             #change to UI sizes by X
             wpercent = (MAX_UI_X/float(im.size[0]))
@@ -136,8 +140,9 @@ def choosePhoto(mybtn):
             #square 314x314
             im = im.resize((MAX_UI_Y,MAX_UI_Y), Image.ANTIALIAS)
             
-
+        
         globalVal.choosePhotoImg = ImageTk.PhotoImage(im)
+        globalVal.Task_data['Task']['photo_path'] = path
         print("After: "+ str(int(im.height))+"   "+str(int(im.width)))
         mybtn.configure(image = globalVal.choosePhotoImg, text = str(path))
 
