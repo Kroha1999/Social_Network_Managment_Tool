@@ -8,10 +8,11 @@ import instapy_cli
 from instagram_private_api import Client,MediaRatios
 from instagram_private_api_extensions import media
 
+import pickle
+
 #my files
-from FuncFiles import languages 
-from FuncFiles import globalVal
-from FuncFiles import funcs 
+from FuncFiles import languages, globalVal, funcs 
+from TFrame.Task import Task
 
 #CONSTANTS
 LARGE_FONT = ("Colibri", 12) 
@@ -215,7 +216,7 @@ class PostPage(tk.Frame):
         globalVal.choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
         
         self.choosePh = tk.Button(cent_frame, image=globalVal.choosePhotoImg,bd=1,bg="white",command = lambda *args: funcs.choosePhoto(self.choosePh))
-        self.choosePh.pack(side=tk.TOP,pady=10)
+        self.choosePh.pack(side=tk.LEFT,pady=10)
         
         #_Frame just to keep place between buttons and image after pack/unpack actions
         self.keep_place_frame = tk.Frame(cent_frame,bg = 'white') 
@@ -223,8 +224,40 @@ class PostPage(tk.Frame):
         #__Frame to be hidden on preview
         self.desc_frame = tk.Frame(self.keep_place_frame,bg = 'white')
         
+
+
+        #TODO:location
+        self.chosen_location = None
+        self.lab_loc=tk.Label(self.desc_frame,text= "This is Location field, (double click to choose)",bg="white",font=LARGE_FONT)
+        self.lab_loc.pack(side=tk.TOP,pady=5)
+        
+        self.loc_find_frame = tk.Frame(self.desc_frame,bg='white')
+        self.locate = tk.Entry(self.loc_find_frame)
+        self.locate.pack(side = tk.LEFT)
+        self.locate_btn = tk.Button(self.loc_find_frame, text = "FIND",command=self.loc)
+        self.locate_btn.pack(side = tk.LEFT,padx=15)
+        self.loc_find_frame.pack()
+
+        self.loc_hid_frame = tk.Frame(self.desc_frame,bg='white')
+        self.loc_hid_frame.pack()
+        #__preview results
+        self.loc_tree = ttk.Treeview(self.loc_hid_frame,height=5)
+
+        self.loc_tree.config(columns =('position','id'))
+        self.loc_tree.column('position',width=125,anchor=tk.CENTER)
+        self.loc_tree.heading('position',text='Position')
+        self.loc_tree.column('id',width=125,anchor=tk.CENTER)
+        self.loc_tree.heading('id',text='ID')
+        self.loc_tree.column('#0',width=150,anchor=tk.CENTER)
+        self.loc_tree.heading('#0',text='Title')
+        self.loc_tree.bind('<Double-1>',self.choose_loc)
+        #self.loc_tree.pack()
+        #TODO:location end
+
+
         self.lab_nc1t=tk.Label(self.desc_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
         self.lab_nc1t.pack(side=tk.TOP,pady=5)
+      
         #____At least one of 3 textboxes must be not empty
         #____Unchangeble text Field 1 (This text will not be translated)
         self.no_change_1_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 2)
@@ -233,7 +266,7 @@ class PostPage(tk.Frame):
         self.lab_ct=tk.Label(self.desc_frame,text= "This is translateble description field",bg="white",font=LARGE_FONT)
         self.lab_ct.pack(side=tk.TOP,pady=5)
         #____Changeble text Field (This text WILL BE translated, if translate option choosen)
-        self.change_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 10)
+        self.change_text = tk.Text(self.desc_frame,bg='white',bd=1,width =50,height = 3)
         self.change_text.pack(side=tk.TOP,pady=5)
 
         self.lab_nc2t=tk.Label(self.desc_frame,text= "This is permanent description field",bg="white",font=LARGE_FONT)
@@ -272,8 +305,13 @@ class PostPage(tk.Frame):
     def previewTask(self):
         if self.desc_frame.winfo_ismapped():
             self.prev_text_btn.configure(text = 'Change Description')
+            
+            
+            loc = 'Not chosen\n'
+            if self.chosen_location != None:
+                loc = self.chosen_location['text'] + "\n"
             #show preview
-            self.prev_text.configure(text = self.no_change_1_text.get('1.0',tk.END)[:-1]+self.change_text.get('1.0',tk.END)[:-1]+self.no_change_2_text.get('1.0',tk.END)[:-1]) 
+            self.prev_text.configure(text = 'location: ' + loc + self.no_change_1_text.get('1.0',tk.END)[:-1]+self.change_text.get('1.0',tk.END)[:-1]+self.no_change_2_text.get('1.0',tk.END)[:-1]) 
             self.prev_text.pack(side = tk.TOP)
             #hide description field
             self.desc_frame.pack_forget()
@@ -281,6 +319,9 @@ class PostPage(tk.Frame):
             self.prev_text_btn.configure(text = 'Preview Description')
             self.prev_text.pack_forget()
             self.desc_frame.pack(side = tk.TOP)
+    
+    
+    
     
     def implementTask(self,controller):
 
@@ -319,28 +360,82 @@ class PostPage(tk.Frame):
                 tk.messagebox.showerror('No image chosen', 'Please choose an image in order to make an Instagram post')
                 return
 
+            loc = None
+            try:
+                #choosing location
+                loc = globalVal.accountsInstancesInsta[globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram'][0]['nickname']].location_info(self.chosen_location['id'])['location']
+                # the bug in the instagram private api -> next line fixes it
+                loc['address'] = loc['lat']
+            except:
+                #no location
+                loc = None
+            
             #Publishing with translation    
             for acc in globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram']:
                 photo_data, photo_size = media.prepare_image(im_path, aspect_ratios=MediaRatios.standard)
-                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'])
-            
+                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'],location = loc)#POSTING FUNCTION
+                #Client.locat
+
             #Publishing without translation
             for acc in globalVal.Task_data['Task']['InstagramPost']['choose_trans']['Instagram']:
                 photo_data, photo_size = media.prepare_image(im_path, aspect_ratios=MediaRatios.standard)
-                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'])
+                globalVal.accountsInstancesInsta[acc['nickname']].post_photo(photo_data, photo_size, acc['postText'],location = loc)#POSTING FUNCTION
 
             
             #go to the first page
             controller.show_frame(None,False,True)
-        
+    
+
+    #TODO: Settle locations
+    def loc(self):
+        if self.locate_btn['text'] == 'FIND':
+            self.loc_tree.pack(fill='x')
+            uuid = globalVal.accountsInstancesInsta['_testaccoun_'].generate_uuid()
+            self.locs = globalVal.accountsInstancesInsta['_testaccoun_'].location_fb_search(self.locate.get(),uuid)
+
+            self.loc_tree.delete(*self.loc_tree.get_children())
+
+            iter = 0
+            for i in self.locs['items']:
+                self.loc_tree.insert('',iter, "Item"+str(iter),text = str(i['title']))
+                self.loc_tree.set("Item"+str(iter),'position',str(i['location']['lng']) + ', ' + str(i['location']['lat']))
+                self.loc_tree.set("Item"+str(iter),'id',str(i['location']['facebook_places_id']))
                 
+                iter = iter + 1
+        else:
+            self.chosen_location = None
+            self.locate_btn.configure(text = 'FIND')
+            self.locate.delete(0,tk.END)
+            self.locate.configure(fg = 'black',state = tk.NORMAL)  
+            self.loc_tree.delete(*self.loc_tree.get_children())          
+            
+
+    def choose_loc(self,event):
+        try:
+            item = self.loc_tree.selection()[0]
+        except IndexError:
+            return
+
+        if self.loc_tree.item(item,"text") != '':
+            
+            text = str(self.loc_tree.item(item,"text"))
+            print(text +'\n')
+            self.locate.delete(0,tk.END)
+            self.locate.insert(0,text)
+            
+            self.chosen_location = {'text':text, 'id':self.loc_tree.item(item,"values")[1]}
+            self.locate.configure(fg = 'green',state = 'readonly')
+            
+            self.locate_btn.configure(text = "RESET")
+            self.loc_tree.pack_forget()
+
+            
+            
+            
+        
+        
         
     
-        
-
-        
-        
-
     def updateView(self):
 
         globalVal.choosePhotoImg = tk.PhotoImage(file='icons\\choosephoto.png')
@@ -353,6 +448,13 @@ class PostPage(tk.Frame):
         self.no_change_1_text.delete('1.0',tk.END)
         self.change_text.delete('1.0',tk.END)
         self.no_change_2_text.delete('1.0',tk.END)
+
+        self.chosen_location = None
+        self.locate_btn.configure(text = 'FIND')
+        self.locate.delete(0,tk.END)
+        self.locate.configure(fg = 'black',state = tk.NORMAL)    
+        self.loc_tree.delete(*self.loc_tree.get_children()) 
+
 
         
 

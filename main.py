@@ -14,16 +14,11 @@ from instagram_private_api import Client
 from PIL import Image, ImageTk, ImageDraw
 from io import BytesIO
 import numpy as np
-import os
-import requests
-import json
-
-import pickle
+import os, requests, json, pickle
 
 
 #my files
-from FuncFiles import languages 
-from FuncFiles import globalVal
+from FuncFiles import languages, globalVal
 from TFrame    import TasksFrame 
 
 
@@ -353,6 +348,7 @@ def addAccountPopUp():
 root = tk.Tk()
 root.configure(background = "white")
 root.title("Social Managment Tool")
+root.geometry('1000x500')
 # ********** Sub Menus **********
 menu = tk.Menu(root)
 root.config(menu=menu)
@@ -458,14 +454,15 @@ botBut2.pack(side=tk.RIGHT)
 # ********** Status Bar **********
 status = tk.Label(statusbar_frame,text = "Preparing to do it...", bd=1, relief=tk.SUNKEN, anchor=tk.W)
 status.pack(side = tk.BOTTOM,fill=tk.X)
-
+ 
 
 
 #****************Right Workplace****************
-taskBut = tk.Button(root, width=100,text = "TASK MENU")
-taskBut.pack(fill=tk.X)
+#taskBut = tk.Button(root, width=100,text = "TASK MENU")
+#taskBut.pack(fill=tk.X)
 
 # ********************************* TASKS WINDOW ***********************************************
+
 tasks =  TasksFrame.MultipleWindows(root)
 tasks.pack(fill=tk.BOTH,expand=tk.YES)
 

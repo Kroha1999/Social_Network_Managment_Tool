@@ -20,6 +20,7 @@ MAX_UI_Y = 314
 def print(text):
     text = text.encode('utf-8')
     sys.stdout.buffer.write(text)
+    return text
 
 #_________________________DATA UI Functions______________________________
 
@@ -53,7 +54,7 @@ def updateTree(tree,insert_data):
             
         tree.insert('', i, "Item"+str(i), text = str(acc["nickname"]),image = globalVal.myImg[acc['nickname']+acc["imgUrl"]])
         tree.set("Item"+str(i),'soc',"Instagram")
-        tree.set("Item"+str(i),'soc',)
+        #tree.set("Item"+str(i),'soc',)
         tree.set("Item"+str(i),'lan',languages.LANGTOCODES[acc['language']])
 
         i+=1
