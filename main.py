@@ -125,8 +125,15 @@ def updateTreeView():
 
             try:
                 ima = globalVal.myImg[p['nickname']+p["imgUrl"]]
+                #TEST
+                im2 = Image.open('icons//'+CurrentSocialNetwork+'.png')
+                im2 = im2.resize((10,10),Image.ANTIALIAS)
+                ima.paste(im2,(22,22))
             except:
                 ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
+                im2 = Image.open('icons//'+CurrentSocialNetwork+'.png')
+                im2 = im2.resize((10,10),Image.ANTIALIAS)
+                ima.paste(im2,(22,22))
                 globalVal.myImg[p['nickname']+p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
             

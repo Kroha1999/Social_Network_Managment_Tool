@@ -398,8 +398,8 @@ class PostPage(tk.Frame):
     def loc(self):
         if self.locate_btn['text'] == 'FIND':
             self.loc_tree.pack(fill='x')
-            uuid = globalVal.accountsInstancesInsta['_testaccoun_'].generate_uuid()
-            self.locs = globalVal.accountsInstancesInsta['_testaccoun_'].location_fb_search(self.locate.get(),uuid)
+            uuid = globalVal.accountsInstancesInsta[globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram'][0]['nickname']].generate_uuid()
+            self.locs = globalVal.accountsInstancesInsta[globalVal.Task_data['Task']['InstagramPost']['chosen_trans']['Instagram'][0]['nickname']].location_fb_search(self.locate.get(),uuid)
 
             self.loc_tree.delete(*self.loc_tree.get_children())
 
