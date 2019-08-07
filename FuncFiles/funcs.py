@@ -42,6 +42,11 @@ def updateTree(tree,insert_data):
     i=0
     
     for acc in insert_data['Instagram']:
+        
+        #if account logged out
+        if acc['login'] == False:
+            continue
+
         globalVal.myImg
         try:
             ima = globalVal.myImg[acc['nickname']+acc["imgUrl"]]

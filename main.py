@@ -7,7 +7,7 @@ from tkinter import font
 #instagram
 import instaloader
 #from instaloader import Profile
-from instagram_private_api import Client
+from instagram_private_api import Client, ClientLoginRequiredError
 #from instapy_cli import client
 
 #outer libs
@@ -18,7 +18,7 @@ import os, requests, json, pickle
 
 
 #my files
-from FuncFiles import languages, globalVal
+from FuncFiles import languages, globalVal, funcs
 from TFrame    import TasksFrame 
 
 
@@ -52,6 +52,8 @@ if not os.path.exists(PATH_SESSIONS_INSTALOADER):
 #INSTALOADER$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 def getSavedAccSessionsInsta():
+    global data_accounts
+    check_logout = False
     for acc in data_accounts['Instagram']:
         nick = acc['nickname']
         password = acc['password']
@@ -61,7 +63,22 @@ def getSavedAccSessionsInsta():
             cook = pickle.load(f)
             f.close()
         globalVal.accountsInstancesInsta[nick] = Client(nick,password,cookie = cook )
-        print(globalVal.accountsInstancesInsta[nick].authenticated_params)
+        #check 
+        #globalVal.accountsInstancesInsta[nick].presence_status()
+        
+        #Check on logout
+        try:
+            globalVal.accountsInstancesInsta[nick].presence_status()
+            print(globalVal.accountsInstancesInsta[nick].authenticated_params)
+            acc['login'] = True
+        except ClientLoginRequiredError:
+            acc['login'] = False
+            print("Logout occured: "+nick)
+            check_logout = True
+    
+    if check_logout:
+        updateAccountsData()
+        
 
 
     
@@ -123,21 +140,27 @@ def updateTreeView():
     for p in data_accounts[CurrentSocialNetwork]:
         if CurrentSocialNetwork == 'Instagram':
 
+            
+            
+
             try:
                 ima = globalVal.myImg[p['nickname']+p["imgUrl"]]
-                #TEST
-                im2 = Image.open('icons//'+CurrentSocialNetwork+'.png')
-                im2 = im2.resize((10,10),Image.ANTIALIAS)
-                ima.paste(im2,(22,22))
+
             except:
                 ima = circle_img(Image.open(PATH_PROFILE_PICS+p['nickname']+'.png'))
+                #social image
                 im2 = Image.open('icons//'+CurrentSocialNetwork+'.png')
                 im2 = im2.resize((10,10),Image.ANTIALIAS)
                 ima.paste(im2,(22,22))
                 globalVal.myImg[p['nickname']+p["imgUrl"]]=ImageTk.PhotoImage(ima)
             
+            #if logout occured
+            if p['login'] == False:
+                myTreeView.insert('', i, "Item"+str(i),tags = ('error',), text = 'NEEDS RELOGIN: '+str(p["nickname"]),image = globalVal.myImg[p['nickname']+p["imgUrl"]])
+                myTreeView.tag_configure('error', background='#f9e6e6',foreground='black')
+            else:
+                myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = globalVal.myImg[p['nickname']+p["imgUrl"]])
             
-            myTreeView.insert('', i, "Item"+str(i), text = str(p["nickname"]),image = globalVal.myImg[p['nickname']+p["imgUrl"]])
             myTreeView.set("Item"+str(i),'lan',languages.LANGTOCODES[p['language']])
             #myTreeView.insert("Item"+str(i), 3, str(i)+"ElSubItem"+str(3), text = str(p["password"]))
             try:
@@ -256,6 +279,7 @@ def addAccount(name,password,lan,other_data,cli):
             acc['biography']=other_data['biography']
             acc['imgUrl']=other_data['imgUrl']
             acc['cookie']=other_data['cookie']
+            acc['login'] = True
             
             #Saving image
             response = requests.get(other_data['imgUrl'])
@@ -275,7 +299,8 @@ def addAccount(name,password,lan,other_data,cli):
             'fullName': other_data['fullName'],
             'biography':other_data['biography'],
             'imgUrl':   other_data['imgUrl'],
-            'cookie':   other_data['cookie']
+            'cookie':   other_data['cookie'],
+            'login':    True
         })
 
         #Saving image locally
@@ -474,4 +499,5 @@ tasks =  TasksFrame.MultipleWindows(root)
 tasks.pack(fill=tk.BOTH,expand=tk.YES)
 
 getSavedAccSessionsInsta()#####getting saved accounts
+funcs.print(str(data_accounts))
 root.mainloop()
