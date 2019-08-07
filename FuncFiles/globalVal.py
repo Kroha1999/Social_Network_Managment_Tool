@@ -12,6 +12,8 @@ global choosePhotoImg
 global accountsInstancesInsta
 
 
+
+
 def globals_init():
     global myImg
     myImg = {}
@@ -20,11 +22,13 @@ def globals_init():
     accountsInstancesInsta={}
 
     global tweet_credentials
-    tweet_credentials = {}
-    tweet_credentials['CONSUMER_KEY'] = 'TWOkZf244A9kFMBDHwFN1oo5w'
-    tweet_credentials['CONSUMER_SECRET'] = 'iIWXYfexDY715kpefpTX6hty5LPYMZ8IJSormMT0WWVHgAG5hf'
-    tweet_credentials['ACCESS_TOKEN'] = '1159050673381675008-K9kYW2gp97P4O3k7XofMbGt8M58qKf'
-    tweet_credentials['ACCESS_SECRET'] = 'dSdcWbWa4UJCB5xYdfAxjG9X3ZUrgaFe4kcrIEQMNTqb4'
+    #tweet_credentials['CONSUMER_KEY'] = ''
+    #tweet_credentials['CONSUMER_SECRET'] = ''
+    #tweet_credentials['ACCESS_TOKEN'] = ''
+    #tweet_credentials['ACCESS_SECRET'] = ''
+    with open('data//twitter_api.json', "r") as f:
+        tweet_credentials = json.load(f)
+    
 
     resetTask()
 
