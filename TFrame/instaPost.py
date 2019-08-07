@@ -55,6 +55,8 @@ class ChooseAccounts(tk.Frame):
         self.chooseTreeView.column('#0',width=150,anchor=tk.CENTER)
         self.chooseTreeView.heading('#0',text='Nickname')
         self.chooseTreeView.pack(side = tk.LEFT)
+        #Choose on double click
+        self.chooseTreeView.bind('<Double-1>',lambda *args: funcs.moveEl(self.chooseTreeView,self.chosenTreeView,globalVal.Task_data['AllAccounts'],globalVal.Task_data['Task']['InstagramPost']['chosen_acc']))
         
         ## choose buttons frame
         button_frame = tk.Frame(choose_frame,bg='white')
@@ -76,6 +78,8 @@ class ChooseAccounts(tk.Frame):
         self.chosenTreeView.column('#0',width=150,anchor=tk.CENTER)
         self.chosenTreeView.heading('#0',text='Nickname')
         self.chosenTreeView.pack(side = tk.LEFT)
+        self.chosenTreeView.bind('<Double-1>',lambda *args: funcs.moveEl(self.chosenTreeView,self.chooseTreeView,globalVal.Task_data['Task']['InstagramPost']['chosen_acc'],globalVal.Task_data['AllAccounts']))
+        
 
         #Button confirm
         btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
@@ -144,6 +148,8 @@ class ChooseTranslation(tk.Frame):
         self.chooseTransTree.column('#0',width=150,anchor=tk.CENTER)
         self.chooseTransTree.heading('#0',text='Nickname')
         self.chooseTransTree.pack(side = tk.LEFT)
+        #Choose by double click
+        self.chooseTransTree.bind('<Double-1>',lambda *args: funcs.moveEl(self.chooseTransTree,self.chosenTransTree,globalVal.Task_data['Task']['InstagramPost']['choose_trans'],globalVal.Task_data['Task']['InstagramPost']['chosen_trans']))
         
          ## choose buttons frame
         button_frame = tk.Frame(self.choose_frame,bg='white')
@@ -165,6 +171,8 @@ class ChooseTranslation(tk.Frame):
         self.chosenTransTree.column('#0',width=150,anchor=tk.CENTER)
         self.chosenTransTree.heading('#0',text='Nickname')
         self.chosenTransTree.pack(side = tk.LEFT)
+        #Unchoose by double click
+        self.chosenTransTree.bind('<Double-1>',lambda *args: funcs.moveEl(self.chosenTransTree,self.chooseTransTree,globalVal.Task_data['Task']['InstagramPost']['chosen_trans'],globalVal.Task_data['Task']['InstagramPost']['choose_trans']))
 
         #Button confirm
         btConfirm = tk.Button(cent_frame,text="SUBMIT",bg = 'white',
