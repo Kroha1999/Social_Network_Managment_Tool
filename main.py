@@ -5,16 +5,17 @@ from tkinter import ttk
 from tkinter import font
 
 #instagram
-import instaloader
-#from instaloader import Profile
 from instagram_private_api import Client, ClientLoginRequiredError
-#from instapy_cli import client
+
+#Twitter
+import tweepy
 
 #outer libs
 from PIL import Image, ImageTk, ImageDraw
 from io import BytesIO
 import numpy as np
 import os, requests, json, pickle
+import webbrowser
 
 
 #my files
@@ -86,7 +87,7 @@ def getInstaloader(username, password,popup,lan):
     cli = 0
     try:
         cli = Client(username,password)
-        print(cli.authenticated_params)
+        #print(cli.authenticated_params)
         data = getProfileData(cli)
         addAccount(username,password,lan,data,cli)
         popup.destroy()
@@ -341,39 +342,112 @@ def addAccountPopUp():
     mes.configure(font=f)
     
     #Center
-    qNick = tk.Label(popup, text="?",bg="white")
-    qNick.grid(row=1,column=0)
+    #TEST
+    qSoc = tk.Label(popup, text="?",bg="white")
+    qSoc.grid(row=1,column=0)
+    qSoc.configure(font = f)
+    social = tk.Label(popup,text='Social:',width = 13,anchor ='w',bg="white")
+    social.grid(row=1,column=1)
+    socChooseVar = tk.StringVar(popup)
+    socChooseVar.set('Instagram')
+    socChoose = tk.OptionMenu(popup,socChooseVar,'Instagram','Twitter',command =  lambda *args : socialFrameChange(soc_frames,socChooseVar.get()))
+    socChoose.grid(row=1,column=2,columnspan=3)
+    
+    global soc_frames
+    soc_frames={}
+    #--INSTAGRAM START--
+    soc_frames['Instagram'] = tk.Frame(popup,bg="white")
+    
+    qNick = tk.Label(soc_frames['Instagram'], text="?",bg="white")
+    qNick.grid(row=2,column=0)
     qNick.configure(font=f)
-    nick = tk.Label(popup, text="Nickname:",width = 13,anchor ='w',bg="white")
-    nick.grid(row=1,column=1)
-    nickEnt = tk.Entry(popup,bg="#e1e1e1",width = 22)
-    nickEnt.grid(row=1,column=2,columnspan=3)
+    nick = tk.Label(soc_frames['Instagram'], text="Nickname:",width = 13,anchor ='w',bg="white")
+    nick.grid(row=2,column=1)
+    nickEnt = tk.Entry(soc_frames['Instagram'],bg="#e1e1e1",width = 22)
+    nickEnt.grid(row=2,column=2,columnspan=3)
 
-    qPassword = tk.Label(popup, text="?",pady=4,bg="white")
+    qPassword = tk.Label(soc_frames['Instagram'], text="?",pady=4,bg="white")
     qPassword.configure(font=f)
-    qPassword.grid(row=2,column=0)
-    password = tk.Label(popup, text="Password:",width = 13,anchor ='w',bg="white")
-    password.grid(row=2,column=1)
-    passEnt = tk.Entry(popup,bg="#e1e1e1",show="*",width = 22)
-    passEnt.grid(row=2,column=2,columnspan=3)
+    qPassword.grid(row=3,column=0)
+    password = tk.Label(soc_frames['Instagram'], text="Password:",width = 13,anchor ='w',bg="white")
+    password.grid(row=3,column=1)
+    passEnt = tk.Entry(soc_frames['Instagram'],bg="#e1e1e1",show="*",width = 22)
+    passEnt.grid(row=3,column=2,columnspan=3)
 
-    qLan = tk.Label(popup, text="?",pady=4,width = 4,bg="white")
+    qLan = tk.Label(soc_frames['Instagram'], text="?",pady=4,width = 4,bg="white")
     qLan.configure(font=f)
-    qLan.grid(row=3,column=0)
-    lan = tk.Label(popup, text="Language:",width = 13,anchor ='w',bg="white")
-    lan.grid(row=3,column=1)
-    var = tk.StringVar(popup)
+    qLan.grid(row=4,column=0)
+    lan = tk.Label(soc_frames['Instagram'], text="Language:",width = 13,anchor ='w',bg="white")
+    lan.grid(row=4,column=1)
+    var = tk.StringVar(soc_frames['Instagram'])
     var.set("Untilted")
-    lanEnt = tk.OptionMenu(popup,var,"Untilted",*languages.CODESTOLANG.values())
+    lanEnt = tk.OptionMenu(soc_frames['Instagram'],var,"Untilted",*languages.CODESTOLANG.values())
     lanEnt.configure(font=('calibri',(10)),width = 13,background="#e1e1e1",relief=tk.GROOVE)
     lanEnt['menu'].config(font=('calibri',(10)), bg='white')
-    lanEnt.grid(row=3,column=2,columnspan=3)
+    lanEnt.grid(row=4,column=2,columnspan=3)
     
     #Bottom
-    popupButConfirm = tk.Button(popup,text="Confirm",width=10,bg="white",command=lambda *args: createAccount(nickEnt,passEnt,var,popup))
-    popupButConfirm.grid(row=4,column=1,pady=8,sticky=tk.N)
-    popupButCancel = tk.Button(popup,text="Cancel",width=10,bg="white",command = popup.destroy)
-    popupButCancel.grid(row=4,column=3)
+    popupButConfirm = tk.Button(soc_frames['Instagram'],text="Confirm",width=10,bg="white",command=lambda *args: createAccount(nickEnt,passEnt,var,popup))
+    popupButConfirm.grid(row=5,column=1,pady=8,sticky=tk.N)
+    popupButCancel = tk.Button(soc_frames['Instagram'],text="Cancel",width=10,bg="white",command = popup.destroy)
+    popupButCancel.grid(row=5,column=3)
+
+    soc_frames['Instagram'].grid(row = 2, column = 0, rowspan = 4, columnspan = 5)
+    #--INSTAGRAM END--
+    #--TWITTER START--
+    # auth btn
+    # code entry
+    # submit
+    global auth
+    auth = ''
+    soc_frames['Twitter'] = tk.Frame(popup,bg='white')
+    authBut = tk.Button(soc_frames['Twitter'],text = 'Click here to get auth code',command = getAuthTwitter)
+    authBut.grid(row=0,column = 2, columnspan = 3, pady=2)
+    authCodeEnt = tk.Entry(soc_frames['Twitter'],bg="#e1e1e1",width = 22)#,show="*"
+    authCodeEnt.grid(row=1,column=2,columnspan=3, pady=2)
+    popupButConfirmTw = tk.Button(soc_frames['Twitter'],text="Confirm",width=10,bg="white",command = lambda *args: submitAuthCode(authCodeEnt.get()))
+    popupButConfirmTw.grid(row=2,column=1,pady=3,columnspan=3,sticky=tk.N)
+        
+    #--TWITTER END--
+
+
+#Choose add accouunt social frame
+def socialFrameChange(socials,target):
+    print(str(socials))
+    socials['Instagram'].grid_forget()
+    socials['Twitter'].grid_forget()
+    socials[target].grid(row = 2, column = 0, rowspan = 4, columnspan = 5)
+   
+def getAuthTwitter():
+    global auth
+    auth = tweepy.OAuthHandler(globalVal.tweet_credentials['CONSUMER_KEY'],globalVal.tweet_credentials['CONSUMER_SECRET'])
+
+    try:
+        redirect_url = auth.get_authorization_url()
+    except tweepy.TweepError:
+        tk.messagebox.showerror('ERROR','Something went wrong.\nFailed to get request token.')
+        print('Error! Failed to get request token.')
+    
+    webbrowser.open_new(redirect_url)
+    
+def submitAuthCode(code):
+    if code == '':
+        tk.messagebox.showerror('ERROR','Code field must be filled.')
+    global auth
+    
+    try:
+        auth.get_access_token(code)
+        print("api:  "+str(auth.access_token)+"    secr: " + auth.access_token_secret)
+        api = tweepy.API(auth)
+        api.update_status('tweepy + oauth!')
+    except tweepy.TweepError:
+        tk.messagebox.showerror('ERROR','Failed to get access token.\nIt may be wrong code')
+        print ('Error! Failed to get access token.')
+
+    
+    
+
+
 
 #UI %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #************root****************
@@ -499,5 +573,5 @@ tasks =  TasksFrame.MultipleWindows(root)
 tasks.pack(fill=tk.BOTH,expand=tk.YES)
 
 getSavedAccSessionsInsta()#####getting saved accounts
-funcs.print(str(data_accounts))
+#funcs.print(str(data_accounts))
 root.mainloop()
