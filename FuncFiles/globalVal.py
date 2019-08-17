@@ -10,7 +10,7 @@ global choosePhotoImg
 
 #accounts instanses
 global accountsInstancesInsta
-
+global accountsInstancesTwit
 
 
 
@@ -20,6 +20,9 @@ def globals_init():
 
     global accountsInstancesInsta
     accountsInstancesInsta={}
+
+    global accountsInstancesTwit
+    accountsInstancesTwit = {}
 
     global tweet_credentials
     #tweet_credentials['CONSUMER_KEY'] = ''

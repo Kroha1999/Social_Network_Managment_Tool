@@ -41,28 +41,28 @@ def updateTree(tree,insert_data):
     tree.delete(*tree.get_children())
     i=0
     
-    for acc in insert_data['Instagram']:
-        
-        #if account logged out
-        if acc['login'] == False:
-            continue
-
-        globalVal.myImg
-        try:
-            ima = globalVal.myImg[acc['nickname']+acc["imgUrl"]]
-        except:
-            ima = circle_img(Image.open(PATH_PROFILE_PICS+acc['nickname']+'.png'))
-            globalVal.myImg[acc['nickname']+acc["imgUrl"]]=ImageTk.PhotoImage(ima)
-
-        
-        
+    for soc in ['Instagram','Twitter']:
+        for acc in insert_data[soc]:
             
-        tree.insert('', i, "Item"+str(i), text = str(acc["nickname"]),image = globalVal.myImg[acc['nickname']+acc["imgUrl"]])
-        tree.set("Item"+str(i),'soc',"Instagram")
-        #tree.set("Item"+str(i),'soc',)
-        tree.set("Item"+str(i),'lan',languages.LANGTOCODES[acc['language']])
+            #if account logged out
+            if acc['login'] == False:
+                continue
 
-        i+=1
+            globalVal.myImg
+            try:
+                ima = globalVal.myImg[acc['nickname']+acc["imgUrl"]]
+            except:
+                ima = circle_img(Image.open(PATH_PROFILE_PICS+acc['nickname']+'.png'))
+                globalVal.myImg[acc['nickname']+acc["imgUrl"]]=ImageTk.PhotoImage(ima)
+
+                
+            tree.insert('', i, "Item"+str(i), text = str(acc["nickname"]),image = globalVal.myImg[acc['nickname']+acc["imgUrl"]])
+            tree.set("Item"+str(i),'soc',soc)
+            #tree.set("Item"+str(i),'soc',)
+            tree.set("Item"+str(i),'lan',languages.LANGTOCODES[acc['language']])
+
+            i+=1
+
 
 def moveEl(trVFrom,trVTo,datasetFrom,datasetTo):
     moveItems = trVFrom.selection()
